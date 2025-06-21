@@ -56,7 +56,7 @@ export async function generateEmptyPlanAction(formData: GeneratePlanFormData): P
             },
             body: JSON.stringify({
                 placeName,
-                noOfDays: differenceInDays(fromDate, toDate).toString(),
+                noOfDays: (differenceInDays(toDate, fromDate) + 1).toString(), // FIXED: correct calculation
                 activityPreferences,
                 fromDate: fromDate.getTime(),
                 toDate: toDate.getTime(),
@@ -67,7 +67,7 @@ export async function generateEmptyPlanAction(formData: GeneratePlanFormData): P
         if (!planRes.ok) {
             const errorText = await planRes.text();
             console.error('Failed to create plan:', planRes.status, errorText);
-            return null;
+            throw new Error(`Failed to create plan: ${planRes.status} ${errorText}`); // Throw error for better feedback
         }
         const planData = await planRes.json();
         const planId = planData?.planId;

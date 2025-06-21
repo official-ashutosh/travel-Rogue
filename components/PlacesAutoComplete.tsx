@@ -8,7 +8,7 @@ import {
   useEffect,
   useState,
 } from "react";
-// import usePlacesService from "react-google-autocomplete/lib/usePlacesAutocompleteService";
+import usePlacesService from "react-google-autocomplete/lib/usePlacesAutocompleteService";
 import { Loading } from "@/components/shared/Loading";
 import { ControllerRenderProps, UseFormReturn } from "react-hook-form";
 import { formSchemaType } from "@/components/NewPlanForm";
@@ -16,8 +16,9 @@ import { formSchemaType } from "@/components/NewPlanForm";
 type PlacesAutoCompleteProps = {
   selectedFromList: boolean;
   setSelectedFromList: Dispatch<SetStateAction<boolean>>;
-  form: UseFormReturn<formSchemaType, any, undefined>;
+  form: UseFormReturn<formSchemaType, any, any>;
   field: ControllerRenderProps<formSchemaType, "placeName">;
+  userId?: string;
 };
 
 const PlacesAutoComplete = ({
@@ -25,22 +26,23 @@ const PlacesAutoComplete = ({
   field,
   selectedFromList,
   setSelectedFromList,
+  userId,
 }: PlacesAutoCompleteProps) => {
   const [showReults, setShowResults] = useState(false);
   const isEnglish = (text: string) => /^[A-Za-z0-9\s,.-]+$/.test(text);
 
-  // const {
-  //   placesService,
-  //   placePredictions,
-  //   getPlacePredictions,
-  //   isPlacePredictionsLoading,
-  // } = usePlacesService({
-  //   apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-  //   options: {
-  //     types: ["(regions)"],
-  //     input: field.value,
-  //   },
-  // });
+  const {
+    placesService,
+    placePredictions,
+    getPlacePredictions,
+    isPlacePredictionsLoading,
+  } = usePlacesService({
+    apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+    options: {
+      types: ["(regions)"],
+      input: field.value,
+    },
+  });
 
   const hadleSelectItem = (
     e: MouseEvent<HTMLLIElement>,
@@ -48,11 +50,12 @@ const PlacesAutoComplete = ({
   ) => {
     e.stopPropagation();
     form.clearErrors("placeName");
-
     setShowResults(false);
     setSelectedFromList(true);
-
     form.setValue("placeName", description);
+    if (userId) {
+      form.setValue("userId", userId);
+    }
   };
 
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
@@ -80,12 +83,12 @@ const PlacesAutoComplete = ({
     field.onChange(e.target.value);
 
     //predictions
-    // if (value) {
-    //   getPlacePredictions({ input: value });
-    //   setShowResults(true);
-    // } else {
-    //   setShowResults(false);
-    // }
+    if (value) {
+      getPlacePredictions({ input: value });
+      setShowResults(true);
+    } else {
+      setShowResults(false);
+    }
   };
 
   return (
@@ -93,14 +96,13 @@ const PlacesAutoComplete = ({
       <div className="relative">
         <Input
           type="text"
-          placeholder="Search for your destination city... (Google API temporarily disabled)"
-          onChange={field.onChange}
+          placeholder="Search for your destination city..."
+          onChange={handleSearch}
           onBlur={() => setShowResults(false)}
           value={field.value}
         />
-        {/* Google Places predictions and loading spinner are commented out */}
+        {isPlacePredictionsLoading && <Loading />}
       </div>
-      {/*
       {showReults && (
         <div className="absolute w-full mt-2 shadow-md rounded-xl p-1 bg-background max-h-80 overflow-auto z-50" onMouseDown={(e) => e.preventDefault()}>
           <ul className="w-full flex flex-col gap-2" onMouseDown={(e) => e.preventDefault()}>
@@ -116,7 +118,6 @@ const PlacesAutoComplete = ({
           </ul>
         </div>
       )}
-      */}
     </div>
   );
 };

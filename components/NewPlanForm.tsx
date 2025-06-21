@@ -41,6 +41,7 @@ const formSchema = z.object({
     }),
   activityPreferences: z.array(z.string()),
   companion: z.optional(z.string()),
+  userId: z.optional(z.string()),
 });
 
 export type formSchemaType = z.infer<typeof formSchema>;
@@ -57,7 +58,7 @@ const NewPlanForm = ({
   const router = useRouter();
   const { toast } = useToast();
 
-  const form = useForm<formSchemaType>({
+  const form = useForm<formSchemaType, any, any>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       activityPreferences: [],
@@ -67,6 +68,7 @@ const NewPlanForm = ({
         from: undefined,
         to: undefined,
       },
+      userId: user?.id, // Set the default value of userId from the authenticated user
     },
   });
 
@@ -82,24 +84,34 @@ const NewPlanForm = ({
     }
 
     startTransactionEmptyPlan(async () => {
-      const planId = await generateEmptyPlanAction(values);
-      console.log("[EmptyPlan] Created planId:", planId);
-      if (!planId) {
+      try {
+        const planId = await generateEmptyPlanAction(values);
+        console.log("[EmptyPlan] Created planId:", planId);
+        if (!planId) {
+          toast({
+            title: "Error",
+            description: "Could not create plan. Please try again. (Check backend/API logs for details)",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (typeof planId !== "string" || !planId.trim()) {
+          toast({
+            title: "Error",
+            description: "Invalid plan ID returned. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        closeModal(false);
+        router.push(`/plans/${planId}/plan?isNewPlan=true`);
+      } catch (err: any) {
         toast({
           title: "Error",
-          description: "Could not create plan. Please try again.",
+          description: err?.message || "Could not create plan. Please try again.",
+          variant: "destructive",
         });
-        return;
       }
-      if (typeof planId !== "string" || !planId.trim()) {
-        toast({
-          title: "Error",
-          description: "Invalid plan ID returned. Please try again.",
-        });
-        return;
-      }
-      closeModal(false);
-      router.push(`/plans/${planId}/plan?isNewPlan=true`);
     });
   }
 
@@ -113,24 +125,34 @@ const NewPlanForm = ({
     }
 
     startTransactionAiPlan(async () => {
-      const planId = await generatePlanAction(values);
-      console.log("[AIPlan] Created planId:", planId);
-      if (!planId) {
+      try {
+        const planId = await generatePlanAction(values);
+        console.log("[AIPlan] Created planId:", planId);
+        if (!planId) {
+          toast({
+            title: "Error",
+            description: "Could not create AI plan. Please try again. (Check backend/API logs for details)",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (typeof planId !== "string" || !planId.trim()) {
+          toast({
+            title: "Error",
+            description: "Invalid plan ID returned. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        closeModal(false);
+        router.push(`/plans/${planId}/plan?isNewPlan=true`);
+      } catch (err: any) {
         toast({
           title: "Error",
-          description: "Could not create AI plan. Please try again.",
+          description: err?.message || "Could not create AI plan. Please try again.",
+          variant: "destructive",
         });
-        return;
       }
-      if (typeof planId !== "string" || !planId.trim()) {
-        toast({
-          title: "Error",
-          description: "Invalid plan ID returned. Please try again.",
-        });
-        return;
-      }
-      closeModal(false);
-      router.push(`/plans/${planId}/plan?isNewPlan=true`);
     });
   }
 
@@ -149,6 +171,7 @@ const NewPlanForm = ({
                   form={form}
                   selectedFromList={selectedFromList}
                   setSelectedFromList={setSelectedFromList}
+                  userId={user?.id}
                 />
               </FormControl>
               <FormMessage />

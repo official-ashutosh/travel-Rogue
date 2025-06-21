@@ -6,11 +6,18 @@ import HeaderWithEditIcon from "@/components/shared/HeaderWithEditIcon";
 import List from "@/components/shared/List";
 import {Button} from "@/components/ui/button";
 import {Skeleton} from "@/components/ui/skeleton";
-import {api} from "@/convex/_generated/api";
-import {Doc} from "@/convex/_generated/dataModel";
-import {useMutation} from "convex/react";
 import {PencilIcon, PlusIcon, Sailboat} from "lucide-react";
 import {useState} from "react";
+
+// MERN-style placeholder for updating top activities
+const updateActivities = async (planId: string, updatedArray: string[]) => {
+  // TODO: Replace with your actual MERN backend API call
+  await fetch("/api/plan/update", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ planId, key: "adventuresactivitiestodo", data: updatedArray }),
+  });
+};
 
 type TopActivitiesProps = {
   activities: string[] | undefined;
@@ -26,20 +33,14 @@ export default function TopActivities({
   allowEdit,
 }: TopActivitiesProps) {
   const [editMode, setEditMode] = useState(false);
-  const updateActivities = useMutation(api.plan.updatePartOfPlan);
 
   const handleToggleEditMode = () => {
     setEditMode(!editMode);
   };
 
-  const updateActivitiesToDo = (updatedArray: string[]) => {
-    updateActivities({
-      planId: planId as Doc<"plan">["_id"],
-      data: updatedArray,
-      key: "adventuresactivitiestodo",
-    }).then(() => {
-      handleToggleEditMode();
-    });
+  const updateActivitiesToDo = async (updatedArray: string[]) => {
+    await updateActivities(planId, updatedArray);
+    handleToggleEditMode();
   };
 
   return (

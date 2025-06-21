@@ -1,6 +1,5 @@
 import {Dispatch, SetStateAction} from "react";
 import {z} from "zod";
-import {useMutation} from "convex/react";
 
 import {Button} from "@/components/ui/button";
 import {Tabs, TabsList, TabsTrigger} from "@/components/ui/tabs";
@@ -8,9 +7,6 @@ import {Tabs, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import useItineraryForm from "@/hooks/useItineraryForm";
 
 import {ItineraryValidationSchema} from "@/components/addNewItineraryDay/ItineraryValidationSchema";
-
-import {api} from "@/convex/_generated/api";
-import {Doc} from "@/convex/_generated/dataModel";
 
 import {Sun, Sunrise, Sunset} from "lucide-react";
 import CustomTabContent from "@/components/addNewItineraryDay/CustomTabContent";
@@ -40,7 +36,16 @@ const ItineraryDayForm = ({planId, setOpen}: ItineraryDayFormProps) => {
     isDirty,
   } = useItineraryForm(planId);
 
-  const updateItinerary = useMutation(api.plan.addDayInItinerary);
+  // REMOVE: import { useMutation } from "convex/react";
+  // REMOVE: import { api } from "@/convex/_generated/api";
+  // REMOVE: import { Doc } from "@/convex/_generated/dataModel";
+
+  // Add a placeholder for updateItinerary (replace with your MERN API call)
+  const updateItinerary = async ({planId, itineraryDay}: {planId: string; itineraryDay: ItineraryType}) => {
+    // TODO: Replace with your MERN backend API call
+    // Example: await fetch(`/api/plans/${planId}/itinerary`, { method: 'POST', body: JSON.stringify({ itineraryDay }) })
+    return Promise.resolve();
+  };
 
   const onSaveEditList = (data: {itinerary: ItineraryType}) => {
     if (!planId) return;
@@ -52,7 +57,7 @@ const ItineraryDayForm = ({planId, setOpen}: ItineraryDayFormProps) => {
       return;
 
     updateItinerary({
-      planId: planId as Doc<"plan">["_id"],
+      planId: planId,
       itineraryDay: data.itinerary,
     }).then((_) => setOpen(false));
   };

@@ -20,6 +20,20 @@ type PlanProps = {
 export default async function CommunityPlan({ planId }: PlanProps) {
   const { isLoading, plan } = usePlanContext();
 
+  if (isLoading) {
+    return <div className="text-center py-10">Loading plan...</div>;
+  }
+
+  if (!plan) {
+    return (
+      <div className="text-center py-10 text-red-500">
+        Sorry, this community plan could not be found.<br />
+        It may have been removed or does not exist.<br />
+        <a href="/community-plans" className="underline text-blue-600">Back to Community Plans</a>
+      </div>
+    );
+  }
+
   return (
     <section className="h-full flex flex-col gap-5">
       <PlanMetaData

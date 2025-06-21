@@ -3,17 +3,26 @@ import SectionWrapper from "@/components/sections/SectionWrapper";
 import EditText from "@/components/shared/EditText";
 import HeaderWithEditIcon from "@/components/shared/HeaderWithEditIcon";
 import {Skeleton} from "@/components/ui/skeleton";
-import {api} from "@/convex/_generated/api";
-import {Doc} from "@/convex/_generated/dataModel";
-import {useMutation} from "convex/react";
-import {Clock3} from "lucide-react";
 import {useState} from "react";
+import {Clock3} from "lucide-react";
 
 type BestTimeToVisitProps = {
   content: string | undefined;
   isLoading: boolean;
   planId: string;
   allowEdit: boolean;
+};
+
+const updateBestTimeToVisit = async ({
+  planId,
+  data,
+}: {
+  planId: string;
+  data: string;
+}) => {
+  // TODO: Replace with your MERN backend API call
+  // Example: await fetch(`/api/plans/${planId}/best-time`, { method: 'PUT', body: JSON.stringify({ data }) })
+  return Promise.resolve();
 };
 
 export default function BestTimeToVisit({
@@ -23,7 +32,6 @@ export default function BestTimeToVisit({
   allowEdit,
 }: BestTimeToVisitProps) {
   const [editMode, setEditMode] = useState(false);
-  const updateBestTimeToVisit = useMutation(api.plan.updatePartOfPlan);
 
   const handleToggleEditMode = () => {
     setEditMode(!editMode);
@@ -31,9 +39,8 @@ export default function BestTimeToVisit({
 
   const updateBestTimeToVisitContent = (updatedContent: string) => {
     updateBestTimeToVisit({
-      planId: planId as Doc<"plan">["_id"],
+      planId: planId,
       data: updatedContent.trim(),
-      key: "besttimetovisit",
     }).then(() => {
       handleToggleEditMode();
     });

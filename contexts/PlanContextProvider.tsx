@@ -34,9 +34,23 @@ interface PlanContentGenerationState {
 }
 
 interface Plan {
-  contentGenerationState: PlanContentGenerationState;
-  isSharedPlan: boolean;
-  // ...other plan fields
+  _id: string;
+  nameoftheplace: string;
+  abouttheplace: string;
+  adventuresactivitiestodo: string[];
+  topplacestovisit: string[];
+  itinerary: string[];
+  localcuisinerecommendations: string[];
+  packingchecklist: string[];
+  besttimetovisit: string;
+  imageUrl: string;
+  isPublished: boolean;
+  companion?: string;
+  activityPreferences?: string[];
+  fromDate?: number;
+  toDate?: number;
+  userPrompt?: string;
+  // ...other plan fields as needed
 }
 
 type planStateType = PlanContentGenerationState;
@@ -45,10 +59,7 @@ type PlanContextType = {
   planState: planStateType;
   setPlanState: Dispatch<SetStateAction<planStateType>>;
   shouldShowAlert: boolean;
-  plan:
-    | (Plan & PlanSettings)
-    | null
-    | undefined;
+  plan: Plan | null | undefined;
   isLoading: boolean;
 };
 
@@ -91,7 +102,7 @@ const PlanContextProvider = ({
 }) => {
   const [planState, setPlanState] = useState<planStateType>(defaultPlanState);
   const searchParams = useSearchParams();
-  const isNewPlan = Boolean(searchParams.get("isNewPlan"));
+  const isNewPlan = Boolean(searchParams && searchParams.get("isNewPlan"));
   const { shouldShowAlert, plan, isLoading, error } = usePlan(
     planId,
     isNewPlan,
@@ -100,6 +111,7 @@ const PlanContextProvider = ({
   useEffect(() => {
     if (isLoading || !plan) return;
     setPlanState((state) => ({
+      ...defaultPlanState,
       ...plan.contentGenerationState,
       weather: state.weather,
     }));

@@ -1,9 +1,6 @@
 import {getAuthToken} from "@/app/auth";
 import Header from "@/components/plan/Header";
 import PlanLayoutContent from "@/components/plan/PlanLayoutContent";
-import {api} from "@/convex/_generated/api";
-import {Id} from "@/convex/_generated/dataModel";
-import {fetchQuery} from "convex/nextjs";
 import {Metadata, ResolvingMetadata} from "next";
 
 export async function generateMetadata(
@@ -15,14 +12,17 @@ export async function generateMetadata(
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   const id = params.planId;
-  const token = await getAuthToken();
-
+  // const token = await getAuthToken();
   try {
-    const plan = await fetchQuery(
-      api.plan.getSinglePlan,
-      {id: id as Id<"plan">, isPublic: true},
-      {token}
+    // MERN-style placeholder for fetching a single plan
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || ""}/api/plans/${id}?public=true`,
+      {
+        method: "GET",
+        // headers: { Authorization: `Bearer ${token}` },
+      }
     );
+    const plan = await res.json();
     return {
       title: plan ? plan.nameoftheplace : "Your Plan",
     };

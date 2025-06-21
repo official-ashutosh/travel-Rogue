@@ -4,11 +4,19 @@ import EditList from "@/components/shared/EditList";
 import HeaderWithEditIcon from "@/components/shared/HeaderWithEditIcon";
 import List from "@/components/shared/List";
 import {Skeleton} from "@/components/ui/skeleton";
-import {api} from "@/convex/_generated/api";
-import {Doc} from "@/convex/_generated/dataModel";
-import {useMutation} from "convex/react";
 import {Backpack} from "lucide-react";
 import {useState} from "react";
+
+// MERN-style placeholder for updating the packing checklist
+const updatePackingChecklist = async (planId: string, updatedArray: string[]) => {
+  // TODO: Replace with your actual MERN backend API call
+  // Example: await fetch(`/api/plan/update`, { method: 'POST', body: JSON.stringify({ planId, key: 'packingchecklist', data: updatedArray }) })
+  await fetch("/api/plan/update", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ planId, key: "packingchecklist", data: updatedArray }),
+  });
+};
 
 type PackingChecklistProps = {
   checklist: string[] | undefined;
@@ -24,20 +32,14 @@ export default function PackingChecklist({
   allowEdit,
 }: PackingChecklistProps) {
   const [editMode, setEditMode] = useState(false);
-  const updatePackingChecklist = useMutation(api.plan.updatePartOfPlan);
 
   const handleToggleEditMode = () => {
     setEditMode(!editMode);
   };
 
-  const updateChecklist = (updatedArray: string[]) => {
-    updatePackingChecklist({
-      planId: planId as Doc<"plan">["_id"],
-      data: updatedArray,
-      key: "packingchecklist",
-    }).then(() => {
-      handleToggleEditMode();
-    });
+  const updateChecklist = async (updatedArray: string[]) => {
+    await updatePackingChecklist(planId, updatedArray);
+    handleToggleEditMode();
   };
 
   return (

@@ -3,9 +3,6 @@ import {Input} from "@/components/ui/input";
 import {ChangeEvent, MouseEvent, useState} from "react";
 import usePlacesService from "react-google-autocomplete/lib/usePlacesAutocompleteService";
 import {Loading} from "@/components/shared/Loading";
-import {Id} from "@/convex/_generated/dataModel";
-import {useMutation} from "convex/react";
-import {api} from "@/convex/_generated/api";
 import {Search} from "lucide-react";
 import {useToast} from "@/components/ui/use-toast";
 
@@ -21,7 +18,12 @@ const LocationAutoComplete = ({planId, addNewPlaceToTopPlaces}: LocationAutoComp
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  const updatePlaceToVisit = useMutation(api.plan.updatePlaceToVisit);
+  // Add a placeholder for updatePlaceToVisit (replace with your MERN API call)
+  const updatePlaceToVisit = async ({placeName, lat, lng, planId}: {placeName: string; lat: number; lng: number; planId: string}) => {
+    // TODO: Replace with your MERN backend API call
+    // Example: await fetch(`/api/plans/${planId}/top-places`, { method: 'POST', body: JSON.stringify({ placeName, lat, lng }) })
+    return Promise.resolve();
+  };
 
   const {placesService, placePredictions, getPlacePredictions, isPlacePredictionsLoading} =
     usePlacesService({
@@ -40,11 +42,12 @@ const LocationAutoComplete = ({planId, addNewPlaceToTopPlaces}: LocationAutoComp
       const lng = e?.geometry?.location?.lng();
       if (!lat || !lng || !e?.name) return;
 
+      // updatePlaceToVisit is now a local async function
       updatePlaceToVisit({
         placeName: e?.name,
         lat,
         lng,
-        planId: planId as Id<"plan">,
+        planId: planId,
       }).then(() => {
         setSearchQuery("");
         setIsSaving(false);

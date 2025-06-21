@@ -2,7 +2,6 @@
 import Map from "@/components/plan/Map";
 import SectionWrapper from "@/components/sections/SectionWrapper";
 import {Skeleton} from "@/components/ui/skeleton";
-import {Doc, Id} from "@/convex/_generated/dataModel";
 import {colors} from "@/lib/constants";
 import {ScrollArea} from "@/components/ui/scroll-area";
 import {DeleteIcon, MapPin, Trash} from "lucide-react";
@@ -13,10 +12,17 @@ import LocationAutoComplete from "@/components/LocationAutoComplete";
 import Autocomplete from "react-google-autocomplete";
 import {MapProvider} from "@/contexts/MapProvider";
 import {Button} from "@/components/ui/button";
-import {useMutation} from "convex/react";
-import {api} from "@/convex/_generated/api";
 import {toast} from "@/components/ui/use-toast";
 import {v4 as uuidv4} from "uuid";
+
+// MERN-style placeholder for updating top places to visit
+const updateTopPlacesToVisit = async ({ planId, data }: { planId: string; data: any }) => {
+  await fetch("/api/plan/update", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ planId, key: "topplacestovisit", data }),
+  });
+};
 
 type location = {
   lat: number;
@@ -43,7 +49,6 @@ const TopPlacesToVisit = ({
 
   const [selectedPlace, setSelectedPlace] = useState<location | undefined>();
   const [isDeleting, setIsDeleting] = useState(false);
-  const updateTopPlacesToVisit = useMutation(api.plan.updatePartOfPlan);
 
   useEffect(() => {
     if (!doesTopPlacesToVisitExist) return;
@@ -73,7 +78,7 @@ const TopPlacesToVisit = ({
     });
   };
 
-  const handleDeletPlace = (id: string) => {
+  const handleDeletPlace = async (id: string) => {
     if (!topPlaces) return;
     setIsDeleting(true);
     const copy = [...topPlaces]
@@ -82,23 +87,21 @@ const TopPlacesToVisit = ({
     const {dismiss} = toast({
       description: `Deleting the place to visit!`,
     });
-    updateTopPlacesToVisit({
-      data: copy,
-      key: "topplacestovisit",
-      planId: planId as Id<"plan">,
-    })
-      .then(() => {
-        dismiss();
-        setTopPlaces((places) => {
-          if (!places || places.length === 1) return [];
-          return places.filter((place) => place.id !== id);
-        });
-        setIsDeleting(false);
-      })
-      .catch((e) => {
-        console.log(e);
-        setIsDeleting(false);
+    try {
+      await updateTopPlacesToVisit({
+        planId,
+        data: copy,
       });
+      dismiss();
+      setTopPlaces((places) => {
+        if (!places || places.length === 1) return [];
+        return places.filter((place) => place.id !== id);
+      });
+      setIsDeleting(false);
+    } catch (e) {
+      console.log(e);
+      setIsDeleting(false);
+    }
   };
 
   return (

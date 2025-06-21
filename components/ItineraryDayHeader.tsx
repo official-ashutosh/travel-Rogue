@@ -1,10 +1,7 @@
 "use client";
 
 import {Button} from "@/components/ui/button";
-import {api} from "@/convex/_generated/api";
-import {useMutation} from "convex/react";
 import {TrashIcon} from "lucide-react";
-import {Id} from "../convex/_generated/dataModel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,8 +21,14 @@ type ItineraryDayHeaderProps = {
   allowEdit: boolean;
 };
 
+// Add a placeholder for deleteDayInItinerary (replace with your MERN API call)
+const deleteDayInItinerary = async (planId: string, dayName: string) => {
+  // TODO: Replace with your MERN backend API call
+  // Example: await fetch(`/api/plans/${planId}/itinerary/${dayName}`, { method: 'DELETE' })
+  alert(`Deleted day '${dayName}' from plan '${planId}' (mock)`);
+};
+
 export default function ItineraryDayHeader({title, planId, allowEdit}: ItineraryDayHeaderProps) {
-  const deleteDayInItinerary = useMutation(api.plan.deleteDayInItinerary);
   const [open, setOpen] = useState(false);
 
   return (
@@ -55,7 +58,7 @@ export default function ItineraryDayHeader({title, planId, allowEdit}: Itinerary
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => deleteDayInItinerary({planId: planId as Id<"plan">, dayName: title})}
+                onClick={() => deleteDayInItinerary(planId, title)}
               >
                 Delete
               </AlertDialogAction>

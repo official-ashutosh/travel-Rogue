@@ -6,9 +6,13 @@ import {Info} from "lucide-react";
 import {useState} from "react";
 import EditText from "@/components/shared/EditText";
 import HeaderWithEditIcon from "@/components/shared/HeaderWithEditIcon";
-import {api} from "@/convex/_generated/api";
-import {useMutation} from "convex/react";
-import {Doc} from "@/convex/_generated/dataModel";
+
+// Add a placeholder for updateAboutThePlace (replace with your MERN API call)
+const updateAboutThePlace = async ({planId, data}: {planId: string; data: string}) => {
+  // TODO: Replace with your MERN backend API call
+  // Example: await fetch(`/api/plans/${planId}/about`, { method: 'PUT', body: JSON.stringify({ data }) })
+  return Promise.resolve();
+};
 
 type AboutThePlaceProps = {
   content: string | undefined;
@@ -19,7 +23,6 @@ type AboutThePlaceProps = {
 
 export default function AboutThePlace({content, isLoading, planId, allowEdit}: AboutThePlaceProps) {
   const [editMode, setEditMode] = useState(false);
-  const updateAboutThePlace = useMutation(api.plan.updatePartOfPlan);
 
   const handleToggleEditMode = () => {
     setEditMode(!editMode);
@@ -27,9 +30,8 @@ export default function AboutThePlace({content, isLoading, planId, allowEdit}: A
 
   const updateAboutThePlaceContent = (updatedContent: string) => {
     updateAboutThePlace({
-      planId: planId as Doc<"plan">["_id"],
+      planId: planId,
       data: updatedContent.trim(),
-      key: "abouttheplace",
     }).then(() => {
       handleToggleEditMode();
     });

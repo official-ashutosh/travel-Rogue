@@ -19,15 +19,75 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/components/ui/use-toast";
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
 import { COMPANION_PREFERENCES } from "@/lib/constants";
 import { cn, getFormattedDateRange } from "@/lib/utils";
-import { useMutation } from "convex/react";
-import { ConvexError } from "convex/values";
 import { Calendar, Eye, Send, Settings2, Users2 } from "lucide-react";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { DateRange } from "react-day-picker";
+
+// MERN-style placeholders for updating plan metadata
+const updateTravelDates = async ({
+  planId,
+  fromDate,
+  toDate,
+}: {
+  planId: string;
+  fromDate: number;
+  toDate: number;
+}) => {
+  await fetch("/api/plan/update", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      planId,
+      key: "travelDates",
+      data: { fromDate, toDate },
+    }),
+  });
+};
+const updatePlanPrivacy = async ({
+  planId,
+  isPublished,
+}: {
+  planId: string;
+  isPublished: boolean;
+}) => {
+  await fetch("/api/plan/update", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ planId, key: "isPublished", data: isPublished }),
+  });
+};
+const updateCompanionId = async ({
+  planId,
+  companionId,
+}: {
+  planId: string;
+  companionId: string;
+}) => {
+  await fetch("/api/plan/update", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ planId, key: "companionId", data: companionId }),
+  });
+};
+const updateActivityPreferences = async ({
+  planId,
+  activityPreferencesIds,
+}: {
+  planId: string;
+  activityPreferencesIds: string[];
+}) => {
+  await fetch("/api/plan/update", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      planId,
+      key: "activityPreferencesIds",
+      data: activityPreferencesIds,
+    }),
+  });
+};
 
 type PlanMetaDataProps = {
   allowEdit: boolean;
@@ -43,6 +103,156 @@ type PlanMetaDataProps = {
 const Icon_ClassName =
   "rounded-full bg-background border-2 text-white shadow-sm p-3 h-auto transition-colors duration-300";
 
+const Preferences = ({
+  activityPreferencesIds,
+  allowEdit,
+  planId,
+  isLoading,
+}: {
+  activityPreferencesIds: string[];
+  allowEdit: boolean;
+  planId: string;
+  isLoading: boolean;
+}) => {
+  const [selectedActivityPreferencesIds, setSelectedActivityPreferencesIds] =
+    useState(activityPreferencesIds);
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setSelectedActivityPreferencesIds(activityPreferencesIds);
+  }, [activityPreferencesIds]);
+
+  const saveActivityPreferences = async () => {
+    if (!selectedActivityPreferencesIds.length) return;
+    await updateActivityPreferences({
+      planId,
+      activityPreferencesIds: selectedActivityPreferencesIds,
+    });
+    toast({
+      title: `Activity Preferences Saved!`,
+    });
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger>
+        <IconWithToolTip tooltipText="Click to see the preferences">
+          <Button
+            disabled={isLoading}
+            className={cn("px-3 py-2 hover:bg-background", Icon_ClassName)}
+          >
+            <Settings2 className="size-4 text-foreground" />
+          </Button>
+        </IconWithToolTip>
+      </PopoverTrigger>
+      <PopoverContent className="w-fit px-5">
+        <ActivityPreferences
+          values={selectedActivityPreferencesIds}
+          onChange={(ids) => {
+            if (!allowEdit) return;
+            setSelectedActivityPreferencesIds(ids);
+          }}
+          className="flex-col"
+          activityClassName="w-full"
+        />
+        {allowEdit && (
+          <Button
+            className="mt-2 w-full"
+            size="sm"
+            onClick={saveActivityPreferences}
+            disabled={!selectedActivityPreferencesIds.length}
+          >
+            Save
+          </Button>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+const Companion = ({
+  companionId,
+  planId,
+  allowEdit,
+  isLoading,
+}: {
+  companionId: string | undefined;
+  planId: string;
+  allowEdit: boolean;
+  isLoading: boolean;
+}) => {
+  const [selectedCompanionId, setSelectedCompanionId] = useState(companionId);
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+
+  const selectedCompanion = useMemo(
+    () => COMPANION_PREFERENCES.find((c) => c.id === selectedCompanionId),
+    [selectedCompanionId]
+  );
+
+  useEffect(() => {
+    setSelectedCompanionId(companionId);
+  }, [companionId]);
+
+  const saveCompanionId = async () => {
+    if (!selectedCompanionId) return;
+    await updateCompanionId({
+      planId,
+      companionId: selectedCompanionId,
+    });
+    toast({
+      title: `Companion saved as ${selectedCompanion?.displayName}`,
+    });
+    setOpen(false);
+  };
+
+  const tooltip = selectedCompanion
+    ? `Travelling as ${selectedCompanion.displayName}`
+    : "Select Companion";
+
+  const icon = selectedCompanion ? (
+    <selectedCompanion.icon className="size-4 text-foreground" />
+  ) : (
+    <Users2 className="size-4 text-foreground" />
+  );
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger>
+        <IconWithToolTip tooltipText={tooltip}>
+          <Button
+            disabled={isLoading}
+            className={cn("px-3 py-2 hover:bg-background", Icon_ClassName)}
+          >
+            {icon}
+          </Button>
+        </IconWithToolTip>
+      </PopoverTrigger>
+      <PopoverContent className="w-fit px-5">
+        <CompanionControl
+          value={selectedCompanionId}
+          onChange={(companionId) => {
+            if (!allowEdit) return;
+            setSelectedCompanionId(companionId);
+          }}
+          className="flex-col"
+        />
+        {allowEdit && (
+          <Button
+            className="mt-2 w-full "
+            size="sm"
+            onClick={saveCompanionId}
+            disabled={!selectedCompanionId}
+          >
+            Save
+          </Button>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+};
+
 const PlanMetaData = ({
   allowEdit,
   fromDate,
@@ -57,8 +267,6 @@ const PlanMetaData = ({
     from: undefined,
     to: undefined,
   });
-  const updateTravelDates = useMutation(api.planSettings.updateTravelDates);
-
   const { toast } = useToast();
 
   const onChangeTravelDates = async (e: DateRange | undefined) => {
@@ -66,7 +274,7 @@ const PlanMetaData = ({
     setSelectedDates(e);
     if (e.from && e.to) {
       await updateTravelDates({
-        planId: planId as Id<"plan">,
+        planId,
         fromDate: e.from.getTime(),
         toDate: e.to.getTime(),
       });
@@ -171,28 +379,24 @@ const PublishPlan = ({
   planId: string;
   isLoading: boolean;
 }) => {
-  const updatePlanPrivacy = useMutation(api.planSettings.updatePlanPrivacy);
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
 
   const onClickChangePrivacy = async () => {
     try {
       await updatePlanPrivacy({
-        planId: planId as Id<"plan">,
+        planId,
         isPublished: !isPublished,
       });
       toast({
         title: `Your plan has been ${isPublished ? "Unpublished" : "published"}`,
       });
     } catch (error) {
-      if (error instanceof ConvexError) {
-        const msg = error.data as string;
-        console.log(msg);
-        toast({
-          title: "Incomplete Travel Plan",
-          description: msg,
-        });
-      }
+      // Optionally handle error
+      toast({
+        title: "Error updating plan privacy",
+        description: error instanceof Error ? error.message : String(error),
+      });
     } finally {
       setOpen(false);
     }
@@ -245,162 +449,6 @@ const PublishPlan = ({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
-};
-
-const Companion = ({
-  companionId,
-  planId,
-  allowEdit,
-  isLoading,
-}: {
-  companionId: string | undefined;
-  planId: string;
-  allowEdit: boolean;
-  isLoading: boolean;
-}) => {
-  const [selectedCompanionId, setSelectedCompanionId] = useState(companionId);
-
-  const updateCompanionId = useMutation(api.planSettings.updateCompanionId);
-  const { toast } = useToast();
-  const [open, setOpen] = useState(false);
-
-  const selectedCompanion = useMemo(
-    () => COMPANION_PREFERENCES.find((c) => c.id === selectedCompanionId),
-    [selectedCompanionId]
-  );
-
-  useEffect(() => {
-    setSelectedCompanionId(companionId);
-  }, [companionId]);
-
-  const saveCompanionId = async () => {
-    if (!selectedCompanionId) return;
-    await updateCompanionId({
-      planId: planId as Id<"plan">,
-      companionId: selectedCompanionId,
-    });
-    toast({
-      title: `Companion saved as ${selectedCompanion?.displayName}`,
-    });
-    setOpen(false);
-  };
-
-  const tooltip = selectedCompanion
-    ? `Travelling as ${selectedCompanion.displayName}`
-    : "Select Companion";
-
-  const icon = selectedCompanion ? (
-    <selectedCompanion.icon className="size-4 text-foreground" />
-  ) : (
-    <Users2 className="size-4 text-foreground" />
-  );
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger>
-        <IconWithToolTip tooltipText={tooltip}>
-          <Button
-            disabled={isLoading}
-            className={cn("px-3 py-2 hover:bg-background", Icon_ClassName)}
-          >
-            {icon}
-          </Button>
-        </IconWithToolTip>
-      </PopoverTrigger>
-      <PopoverContent className="w-fit px-5">
-        <CompanionControl
-          value={selectedCompanionId}
-          onChange={(companionId) => {
-            if (!allowEdit) return;
-            setSelectedCompanionId(companionId);
-          }}
-          className="flex-col"
-        />
-        {allowEdit && (
-          <Button
-            className="mt-2 w-full "
-            size="sm"
-            onClick={saveCompanionId}
-            disabled={!selectedCompanionId}
-          >
-            Save
-          </Button>
-        )}
-      </PopoverContent>
-    </Popover>
-  );
-};
-
-const Preferences = ({
-  activityPreferencesIds,
-  allowEdit,
-  planId,
-  isLoading,
-}: {
-  activityPreferencesIds: string[];
-  allowEdit: boolean;
-  planId: string;
-  isLoading: boolean;
-}) => {
-  const [selectedActivityPreferencesIds, setSelectedActivityPreferencesIds] =
-    useState(activityPreferencesIds);
-  const updateActivityPreferences = useMutation(
-    api.planSettings.updateActivityPreferences
-  );
-  const { toast } = useToast();
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    setSelectedActivityPreferencesIds(activityPreferencesIds);
-  }, [activityPreferencesIds]);
-
-  const saveActivityPreferences = async () => {
-    if (!selectedActivityPreferencesIds.length) return;
-
-    await updateActivityPreferences({
-      planId: planId as Id<"plan">,
-      activityPreferencesIds: selectedActivityPreferencesIds,
-    });
-    toast({
-      title: `Activity Preferences Saved!`,
-    });
-    setOpen(false);
-  };
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger>
-        <IconWithToolTip tooltipText="Click to see the preferences">
-          <Button
-            disabled={isLoading}
-            className={cn("px-3 py-2 hover:bg-background", Icon_ClassName)}
-          >
-            <Settings2 className="size-4 text-foreground" />
-          </Button>
-        </IconWithToolTip>
-      </PopoverTrigger>
-      <PopoverContent className="w-fit px-5">
-        <ActivityPreferences
-          values={selectedActivityPreferencesIds}
-          onChange={(ids) => {
-            if (!allowEdit) return;
-            setSelectedActivityPreferencesIds(ids);
-          }}
-          className="flex-col"
-          activityClassName="w-full"
-        />
-        {allowEdit && (
-          <Button
-            className="mt-2 w-full"
-            size="sm"
-            onClick={saveActivityPreferences}
-            disabled={!selectedActivityPreferencesIds.length}
-          >
-            Save
-          </Button>
-        )}
-      </PopoverContent>
-    </Popover>
   );
 };
 
