@@ -8,42 +8,31 @@ const PlacesAutoComplete = ({ onPlaceSelect, placeholder = "Search places...", c
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef(null);
 
-  // Mock places data for demo purposes
-  const mockPlaces = [
-    { name: 'Eiffel Tower', address: 'Paris, France', type: 'landmark' },
-    { name: 'Times Square', address: 'New York, NY, USA', type: 'attraction' },
-    { name: 'Big Ben', address: 'London, UK', type: 'landmark' },
-    { name: 'Colosseum', address: 'Rome, Italy', type: 'landmark' },
-    { name: 'Sydney Opera House', address: 'Sydney, Australia', type: 'landmark' },
-    { name: 'Statue of Liberty', address: 'New York, NY, USA', type: 'landmark' },
-    { name: 'Golden Gate Bridge', address: 'San Francisco, CA, USA', type: 'landmark' },
-    { name: 'Taj Mahal', address: 'Agra, India', type: 'landmark' },
-    { name: 'Machu Picchu', address: 'Peru', type: 'landmark' },
-    { name: 'Great Wall of China', address: 'China', type: 'landmark' },
-    { name: 'Central Park', address: 'New York, NY, USA', type: 'park' },
-    { name: 'Louvre Museum', address: 'Paris, France', type: 'museum' },
-    { name: 'British Museum', address: 'London, UK', type: 'museum' },
-    { name: 'Metropolitan Museum', address: 'New York, NY, USA', type: 'museum' },
-    { name: 'Vatican Museums', address: 'Vatican City', type: 'museum' },
-  ];
+  const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
 
-  // Search for places
+  // Search for places using Google Places API
   const searchPlaces = async (searchQuery) => {
     if (!searchQuery.trim()) {
       setSuggestions([]);
       return;
     }
-
     setIsLoading(true);
-
     try {
-      // Filter mock places for demo
-      const filtered = mockPlaces.filter(place =>
-        place.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        place.address.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      
-      setSuggestions(filtered.slice(0, 8)); // Limit to 8 suggestions
+      const endpoint = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(searchQuery)}&types=geocode&key=${GOOGLE_MAPS_API_KEY}`;
+      const response = await fetch(endpoint);
+      const data = await response.json();
+      if (data.status === 'OK') {
+        // Map Google predictions to your suggestion format
+        const results = data.predictions.map(pred => ({
+          name: pred.structured_formatting.main_text,
+          address: pred.description,
+          type: pred.types?.[0] || 'place',
+          place_id: pred.place_id
+        }));
+        setSuggestions(results.slice(0, 8));
+      } else {
+        setSuggestions([]);
+      }
     } catch (error) {
       console.error('Places search error:', error);
       setSuggestions([]);
@@ -91,8 +80,11 @@ const PlacesAutoComplete = ({ onPlaceSelect, placeholder = "Search places...", c
 
   // Get type icon
   const getTypeIcon = (type) => {
+    if (!type) return '📍';
+    if (Array.isArray(type)) type = type[0];
     switch (type) {
       case 'landmark':
+      case 'point_of_interest':
         return '🏛️';
       case 'museum':
         return '🏛️';

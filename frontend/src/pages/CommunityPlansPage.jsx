@@ -149,42 +149,40 @@ const CommunityPlansPage = () => {
   };
 
   const noPlansToShow = filteredResults && filteredResults.length === 0 && status !== "LoadingFirstPage";
-
   return (
-    <main className="flex min-h-[calc(100svh-4rem)] flex-col items-center bg-blue-50/40 dark:bg-background">
+    <main className="flex min-h-[calc(100svh-4rem)] flex-col items-center bg-blue-50/40 dark:bg-gray-900 transition-colors">
       <div className="w-full lg:px-20 px-5 py-6">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
-            <Users className="h-8 w-8 text-blue-600" />
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
               Community Plans
             </h1>
           </div>
-          <p className="text-muted-foreground mb-6">
+          <p className="text-muted-foreground dark:text-gray-400 mb-6">
             Discover amazing travel plans shared by fellow travellers around the world
           </p>
 
           {/* Search and Controls */}
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />              <Input
                 onChange={handleSearch}
                 value={searchText}
                 placeholder="Search destinations, activities..."
                 type="search"
-                className="pl-10 bg-white border-slate-200"
+                className="pl-10 bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-600 dark:text-white"
               />
             </div>
             
             <div className="flex gap-2">
-              <div className="flex border border-slate-200 rounded-lg overflow-hidden">
+              <div className="flex border border-slate-200 dark:border-gray-600 rounded-lg overflow-hidden">
                 <Button
                   variant={viewMode === 'grid' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('grid')}
-                  className="px-3 py-2 rounded-none"
+                  className="px-3 py-2 rounded-none dark:text-white"
                 >
                   <Grid className="h-4 w-4" />
                 </Button>
@@ -192,7 +190,7 @@ const CommunityPlansPage = () => {
                   variant={viewMode === 'list' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('list')}
-                  className="px-3 py-2 rounded-none"
+                  className="px-3 py-2 rounded-none dark:text-white"
                 >
                   <List className="h-4 w-4" />
                 </Button>

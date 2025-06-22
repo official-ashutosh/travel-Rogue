@@ -10,46 +10,57 @@ const LocationAutoComplete = ({ onLocationSelect, placeholder = "Enter location.
   const inputRef = useRef(null);
   const { isLoaded, geocodeLocation } = useMap();
 
-  // Mock location data for demo purposes (replace with real API)
-  const mockLocations = [
-    { name: 'New York, NY, USA', lat: 40.7128, lng: -74.0060 },
-    { name: 'Los Angeles, CA, USA', lat: 34.0522, lng: -118.2437 },
-    { name: 'Chicago, IL, USA', lat: 41.8781, lng: -87.6298 },
-    { name: 'Houston, TX, USA', lat: 29.7604, lng: -95.3698 },
-    { name: 'Phoenix, AZ, USA', lat: 33.4484, lng: -112.0740 },
-    { name: 'Philadelphia, PA, USA', lat: 39.9526, lng: -75.1652 },
-    { name: 'San Antonio, TX, USA', lat: 29.4241, lng: -98.4936 },
-    { name: 'San Diego, CA, USA', lat: 32.7157, lng: -117.1611 },
-    { name: 'Dallas, TX, USA', lat: 32.7767, lng: -96.7970 },
-    { name: 'San Jose, CA, USA', lat: 37.3382, lng: -121.8863 },
-    { name: 'Paris, France', lat: 48.8566, lng: 2.3522 },
-    { name: 'London, UK', lat: 51.5074, lng: -0.1278 },
-    { name: 'Tokyo, Japan', lat: 35.6762, lng: 139.6503 },
-    { name: 'Sydney, Australia', lat: -33.8688, lng: 151.2093 },
-    { name: 'Rome, Italy', lat: 41.9028, lng: 12.4964 },
-  ];
+  // Helper to load Google Maps JS API if not already loaded
+  function loadGoogleMapsScript(apiKey) {
+    if (window.google && window.google.maps && window.google.maps.places) return Promise.resolve();
+    if (document.getElementById('google-maps-script')) return new Promise(resolve => {
+      const check = setInterval(() => {
+        if (window.google && window.google.maps && window.google.maps.places) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 50);
+    });
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.id = 'google-maps-script';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.async = true;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.body.appendChild(script);
+    });
+  }
 
-  // Search for locations
+  const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
+
+  // Search for locations using Google Places AutocompleteService
   const searchLocations = async (searchQuery) => {
     if (!searchQuery.trim()) {
       setSuggestions([]);
       return;
     }
-
     setIsLoading(true);
-
     try {
-      // Filter mock locations for demo
-      const filtered = mockLocations.filter(location =>
-        location.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      
-      setSuggestions(filtered.slice(0, 5)); // Limit to 5 suggestions
+      await loadGoogleMapsScript(GOOGLE_MAPS_API_KEY);
+      const service = new window.google.maps.places.AutocompleteService();
+      service.getPlacePredictions({ input: searchQuery, types: ['(cities)'] }, (predictions, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+          const results = predictions.map(pred => ({
+            name: pred.structured_formatting.main_text,
+            address: pred.description,
+            type: pred.types?.[0] || 'place',
+            place_id: pred.place_id
+          }));
+          setSuggestions(results.slice(0, 5));
+        } else {
+          setSuggestions([]);
+        }
+        setIsLoading(false);
+      });
     } catch (error) {
-      console.error('Location search error:', error);
-      setSuggestions([]);
-    } finally {
       setIsLoading(false);
+      setSuggestions([]);
     }
   };
 

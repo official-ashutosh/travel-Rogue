@@ -119,15 +119,13 @@ const DashboardPage = () => {
   const getTotalDestinations = () => {
     const destinations = new Set(plans.map(plan => plan.nameoftheplace));
     return destinations.size;
-  };
-  return (
-    <main className="flex min-h-[calc(100svh-4rem)] flex-col items-center bg-blue-50/40 dark:bg-background">
+  };  return (
+    <main className="flex min-h-[calc(100svh-4rem)] flex-col items-center bg-blue-50/40 dark:bg-gray-900 transition-colors">
       <div className="w-full lg:px-20 px-5 py-6">
         {/* Header Section */}
         <div className="mb-8">
-          <div className="flex flex-col lg:flex-row justify-between gap-4 items-start lg:items-center">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <div className="flex flex-col lg:flex-row justify-between gap-4 items-start lg:items-center">            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent mb-2">
                 Your Travel Dashboard
               </h1>
               <p className="text-slate-600 dark:text-slate-400">

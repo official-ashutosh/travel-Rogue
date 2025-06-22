@@ -19,6 +19,7 @@ import { Button } from './ui/Button.jsx';
 import { Input } from './ui/Input.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import api from '../lib/api.js';
+import LocationAutoComplete from './LocationAutoComplete.jsx';
 
 const NewPlanForm = ({ closeModal }) => {
   const navigate = useNavigate();
@@ -137,11 +138,9 @@ const NewPlanForm = ({ closeModal }) => {
             <MapPin className="w-4 h-4 inline mr-2" />
             Search for your destination city
           </label>
-          <Input
-            type="text"
+          <LocationAutoComplete
             placeholder="Where would you like to go?"
-            value={formData.nameoftheplace}
-            onChange={(e) => handleInputChange('nameoftheplace', e.target.value)}
+            onLocationSelect={(location) => handleInputChange('nameoftheplace', location.name)}
             className="w-full"
           />
         </div>
