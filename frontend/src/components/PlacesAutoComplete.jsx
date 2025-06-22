@@ -8,7 +8,7 @@ const PlacesAutoComplete = ({ onPlaceSelect, placeholder = "Search places...", c
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef(null);
 
-  const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
+  const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 
   // Search for places using Google Places API
   const searchPlaces = async (searchQuery) => {
