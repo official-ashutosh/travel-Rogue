@@ -4,6 +4,7 @@ import { Calendar, MapPin, Users, Clock, Star, Share2, Eye } from "lucide-react"
 import { Card, CardContent } from "@/frontend/components/ui/card"
 import { Badge } from "@/frontend/components/ui/badge"
 import { Button } from "@/frontend/components/ui/button"
+import { getImageUrl, handleImageError } from "@/src/shared/lib/utils"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -39,13 +40,13 @@ const ModernPlanCard = ({ plan, isPublic = false, viewMode = 'grid' }: ModernPla
       <Link href={isPublic ? `/plans/${plan._id}/community-plan` : `/plans/${plan._id}/plan`} className="group block">
         <Card className="overflow-hidden border-0 shadow-md hover:shadow-lg dark:shadow-gray-900/30 dark:hover:shadow-gray-900/50 transition-all duration-200 group-hover:scale-[1.01] bg-white dark:bg-gray-800">
           <div className="flex gap-4 p-4">
-            {/* Image */}
-            <div className="relative w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg">
+            {/* Image */}            <div className="relative w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg">
               <Image
-                src={plan.imageUrl || "/placeholder.svg?height=96&width=96"}
+                src={getImageUrl(plan.imageUrl, 96, 96)}
                 alt={plan.nameoftheplace}
                 fill
                 className="object-cover transition-transform duration-300 group-hover:scale-110"
+                onError={handleImageError}
               />
             </div>
 
@@ -120,13 +121,13 @@ const ModernPlanCard = ({ plan, isPublic = false, viewMode = 'grid' }: ModernPla
     <Link href={isPublic ? `/plans/${plan._id}/community-plan` : `/plans/${plan._id}/plan`} className="group block">
       <Card className="overflow-hidden border-0 shadow-lg hover:shadow-2xl dark:shadow-gray-900/50 dark:hover:shadow-gray-900/70 transition-all duration-300 group-hover:scale-[1.02] bg-white dark:bg-gray-800">
         <div className="relative">
-          {/* Image */}
-          <div className="relative h-48 overflow-hidden">
+          {/* Image */}          <div className="relative h-48 overflow-hidden">
             <Image
-              src={plan.imageUrl || "/placeholder.svg?height=200&width=300"}
+              src={getImageUrl(plan.imageUrl, 300, 200)}
               alt={plan.nameoftheplace}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-110"
+              onError={handleImageError}
             />
 
             {/* Gradient Overlay */}

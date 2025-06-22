@@ -68,7 +68,7 @@ export default function ModernDashboard() {
         toDate: "2024-03-22",
         budget: 2500,
         status: "active",
-        imageUrl: "/api/placeholder/400/300",
+        imageUrl: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400&h=300&fit=crop",
         tags: ["Culture", "Food", "Urban"],
         description: "Explore the vibrant culture and amazing food of Tokyo",
         createdAt: "2024-01-15T10:30:00Z",
@@ -88,7 +88,7 @@ export default function ModernDashboard() {
         toDate: "2024-04-17",
         budget: 3200,
         status: "planning",
-        imageUrl: "/api/placeholder/400/300",
+        imageUrl: "https://images.unsplash.com/photo-1431274172761-fca41d930114?w=400&h=300&fit=crop",
         tags: ["Romance", "Art", "History"],
         description: "A romantic getaway to the City of Light",
         createdAt: "2024-02-01T14:20:00Z",
@@ -108,7 +108,7 @@ export default function ModernDashboard() {
         toDate: "2024-05-14",
         budget: 1800,
         status: "completed",
-        imageUrl: "/api/placeholder/400/300",
+        imageUrl: "https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=400&h=300&fit=crop",
         tags: ["Beach", "Relaxation", "Nature"],
         description: "Peaceful retreat in tropical paradise",
         createdAt: "2024-01-20T09:15:00Z",
@@ -118,8 +118,7 @@ export default function ModernDashboard() {
         travelers: 1,
         views: 203
       }
-    ];
-
+    ];    
     const mockCommunityPlans: Plan[] = [
       {
         _id: "c1",
@@ -129,7 +128,7 @@ export default function ModernDashboard() {
         fromDate: "2024-06-01",
         toDate: "2024-06-10",
         budget: 2800,
-        imageUrl: "/api/placeholder/400/300",
+        imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop",
         tags: ["Adventure", "Mountains", "Nature"],
         description: "Epic mountain adventure in Switzerland",
         rating: 4.7,
@@ -147,7 +146,7 @@ export default function ModernDashboard() {
         fromDate: "2024-07-15",
         toDate: "2024-07-20",
         budget: 2100,
-        imageUrl: "/api/placeholder/400/300",
+        imageUrl: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400&h=300&fit=crop",
         tags: ["Food", "Urban", "Culture"],
         description: "Culinary journey through New York City",
         rating: 4.5,
