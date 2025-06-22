@@ -24,32 +24,21 @@ const Header = () => {
           <Logo />
           <div className="md:hidden flex gap-6 flex-1">
             <MobileMenu />
-          </div>
-          <div className="flex gap-4 justify-end items-center flex-1">
+          </div>          <div className="flex gap-4 justify-end items-center flex-1">
             {!isAuthenticated ? (
               <>
                 <ThemeDropdown />
                 <button
                   type="button"
                   className="btn btn-primary"
-                  onClick={async () => {
-                    const email = prompt("Email?");
-                    const password = prompt("Password?");
-                    if (email && password) await signIn({ email, password });
-                  }}
+                  onClick={() => signIn()}
                 >
                   Sign In
                 </button>
                 <button
                   type="button"
                   className="btn btn-outline-primary"
-                  onClick={async () => {
-                    const name = prompt("Name?");
-                    const email = prompt("Email?");
-                    const password = prompt("Password?");
-                    if (name && email && password)
-                      await signUp({ name, email, password });
-                  }}
+                  onClick={() => signUp()}
                 >
                   Sign Up
                 </button>

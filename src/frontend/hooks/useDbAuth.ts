@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { apiMe, apiSignIn, apiSignOut, apiSignUp } from "@/shared/lib/authApi";
-import AuthModal from "@/frontend/components/AuthModal";
 
 interface User {
   id: string;
@@ -12,7 +11,6 @@ interface User {
 const useDbAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showAuthModal, setShowAuthModal] = useState<null | "signin" | "signup">(null);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -27,14 +25,13 @@ const useDbAuth = () => {
 
   const signIn = useCallback(async (formData?: { email: string; password: string }) => {
     if (!formData) {
-      setShowAuthModal("signin");
+      router.push("/auth/login");
       return;
     }
     setLoading(true);
     try {
       const data = await apiSignIn(formData.email, formData.password);
       setUser(data.user);
-      setShowAuthModal(null);
       // Do NOT redirect to dashboard after sign-in
       // router.push("/dashboard"); // Removed as per user request
     } catch (e) {
@@ -61,14 +58,13 @@ const useDbAuth = () => {
 
   const signUp = useCallback(async (formData?: { name: string; email: string; password: string }) => {
     if (!formData) {
-      setShowAuthModal("signup");
+      router.push("/auth/signup");
       return;
     }
     setLoading(true);
     try {
       const data = await apiSignUp(formData.name, formData.email, formData.password);
       setUser(data.user);
-      setShowAuthModal(null);
       // Redirect to dashboard after successful sign-up (optional, can remove if not desired)
       router.push("/dashboard");
     } catch (e) {
@@ -88,17 +84,8 @@ const useDbAuth = () => {
     signIn,
     signOut,
     signUp,
-    showAuthModal,
-    setShowAuthModal,
     isCurrentPathDashboard,
     isCurrentPathHome,
-    authModalProps: {
-      show: !!showAuthModal,
-      onClose: () => setShowAuthModal(null),
-      mode: showAuthModal || "signin",
-      loading,
-      onSubmit: showAuthModal === "signin" ? signIn : signUp,
-    },
   };
 };
 

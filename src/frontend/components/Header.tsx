@@ -19,7 +19,6 @@ const Header = () => {
   // Replace useAuth with your db-based auth hook
   const { isCurrentPathDashboard, isCurrentPathHome, isAuthenticated, user, signIn, signOut, signUp } = useDbAuth();
   const router = useRouter();
-
   // Forced sign-in redirect logic for protected pages
   useEffect(() => {
     const protectedRoutes = ["/dashboard"];
@@ -28,7 +27,7 @@ const Header = () => {
       protectedRoutes.some((route) => window.location.pathname.startsWith(route)) &&
       !isAuthenticated
     ) {
-      router.push("/sign-in?redirectUrl=" + encodeURIComponent(window.location.pathname));
+      router.push("/auth/login?redirectUrl=" + encodeURIComponent(window.location.pathname));
     }
   }, [isAuthenticated, router]);
 
