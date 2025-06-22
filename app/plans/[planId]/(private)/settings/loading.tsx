@@ -1,4 +1,4 @@
-import {Loading} from "@/components/shared/Loading";
+import {Loading} from "@/frontend/components/shared/Loading";
 
 export default function LoadingComponent() {
   return (

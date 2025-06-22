@@ -1,4 +1,4 @@
-import Header from "@/components/dashboard/Header";
+import Header from "@/frontend/components/dashboard/Header";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

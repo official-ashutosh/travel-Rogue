@@ -1,6 +1,6 @@
-import CurrencySelector from "@/components/settings/CurrencySelector";
-import DangerZone from "@/components/settings/DangerZone";
-import DisplayName from "@/components/settings/DisplayName";
+import CurrencySelector from "@/frontend/components/settings/CurrencySelector";
+import DangerZone from "@/frontend/components/settings/DangerZone";
+import DisplayName from "@/frontend/components/settings/DisplayName";
 
 export default function PlanSettings({params: {planId}}: {params: {planId: string}}) {
   return (

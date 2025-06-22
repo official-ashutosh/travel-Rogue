@@ -1,4 +1,4 @@
-import CommunityPlans from "@/components/community-plans/community-plans";
+import CommunityPlans from "@/frontend/components/community-plans/community-plans";
 
 export default async function CommunityPlansPage({
   searchParams,

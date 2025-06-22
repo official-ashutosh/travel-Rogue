@@ -1,6 +1,6 @@
-import {getAuthToken} from "@/app/auth";
-import Header from "@/components/plan/Header";
-import PlanLayoutContent from "@/components/plan/PlanLayoutContent";
+import {getAuthToken} from "../../../../auth";
+import Header from "@/frontend/components/plan/Header";
+import PlanLayoutContent from "@/frontend/components/plan/PlanLayoutContent";
 import {Metadata, ResolvingMetadata} from "next";
 
 export async function generateMetadata(

@@ -1,13 +1,13 @@
 "use client";
 
-import { Loading } from "@/components/shared/Loading";
-import { cn } from "@/lib/utils";
-import { ThemeDropdown } from "@/components/ThemeDropdown";
-import FeedbackSheet from "@/components/common/FeedbackSheet";
-import Logo from "@/components/common/Logo";
-import { CreditsDrawerWithDialog } from "@/components/shared/DrawerWithDialogGeneric";
+import { Loading } from "@/frontend/components/shared/Loading";
+import { cn } from "@/shared/lib/utils";
+import { ThemeDropdown } from "@/frontend/components/ThemeDropdown";
+import FeedbackSheet from "@/frontend/components/common/FeedbackSheet";
+import Logo from "@/frontend/components/common/Logo";
+import { CreditsDrawerWithDialog } from "@/frontend/components/shared/DrawerWithDialogGeneric";
 import Link from "next/link";
-import MobileMenu from "@/app/community-plans/MobileMenu";
+import MobileMenu from "./MobileMenu";
 
 const Header = () => {
   return (

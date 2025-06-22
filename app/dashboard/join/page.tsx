@@ -1,6 +1,6 @@
 "use client";
 
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/frontend/components/ui/use-toast";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
@@ -13,7 +13,7 @@ const Join = () => {
   const user = { id: "mock-user" };
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const token = searchParams?.get("token");
   const { toast } = useToast();
 
   useEffect(() => {

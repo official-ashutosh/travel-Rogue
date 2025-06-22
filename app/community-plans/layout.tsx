@@ -1,5 +1,5 @@
-import Header from "@/app/community-plans/Header";
-import Progress from "@/components/Progress";
+import Header from "./Header";
+import Progress from "@/frontend/components/Progress";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

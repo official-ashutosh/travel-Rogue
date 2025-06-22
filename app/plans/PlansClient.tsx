@@ -1,5 +1,5 @@
 "use client";
-import NewPlanForm from "@/components/NewPlanForm";
+import NewPlanForm from "@/frontend/components/NewPlanForm";
 
 export default function PlansClient() {
   return (

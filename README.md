@@ -4,6 +4,8 @@
 
 Travel Rogue transforms the way you plan trips by combining cutting-edge AI technology with comprehensive travel management tools. Whether you're planning a weekend getaway or a month-long adventure, our platform makes it effortless to create personalized itineraries, track expenses, and discover amazing destinations.
 
+> **📁 Note:** This project has been restructured for better organization. See [src/README.md](./src/README.md) and [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) for details about the new file structure.
+
 ---
 
 ## ✨ Key Features

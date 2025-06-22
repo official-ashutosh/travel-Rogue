@@ -1,8 +1,8 @@
-import {getAuthToken} from "@/app/auth";
-import Header from "@/components/plan/Header";
-import PlanLayoutContent from "@/components/plan/PlanLayoutContent";
-import Progress from "@/components/Progress";
-import {Toaster} from "@/components/ui/toaster";
+import {getAuthToken} from "../../../auth";
+import Header from "@/frontend/components/plan/Header";
+import PlanLayoutContent from "@/frontend/components/plan/PlanLayoutContent";
+import Progress from "@/frontend/components/Progress";
+import {Toaster} from "@/frontend/components/ui/toaster";
 import {Analytics} from "@vercel/analytics/react";
 import {Metadata, ResolvingMetadata} from "next";
 

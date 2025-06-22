@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { Montserrat_Alternates } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
-import { ThemeProvider } from "@/contexts/ThemeProvider";
+import { ThemeProvider } from "@/frontend/contexts/ThemeProvider";
 
-import AppToastProvider from "@/components/ui/AppToastProvider";
+import AppToastProvider from "@/frontend/components/ui/AppToastProvider";
 
-import Progress from "@/components/Progress";
-import { Toaster } from "@/components/ui/toaster";
+import Progress from "@/frontend/components/Progress";
+import { Toaster } from "@/frontend/components/ui/toaster";
 
 import "./globals.css";
 

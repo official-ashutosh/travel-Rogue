@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Header from "@/components/home/Header";
+import Header from "@/frontend/components/home/Header";
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.travelrogue.site"),
   title: {

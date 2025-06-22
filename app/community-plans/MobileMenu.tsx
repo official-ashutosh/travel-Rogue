@@ -1,10 +1,10 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/frontend/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { AiOutlineClose, AiOutlineMenu } from "react-icons/ai";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 import { ArrowLeft } from "lucide-react";
 
 const MobileMenu = () => {
