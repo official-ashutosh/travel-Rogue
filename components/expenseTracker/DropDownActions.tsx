@@ -9,13 +9,11 @@ import {
 import {Button} from "@/components/ui/button";
 import {DotsHorizontalIcon} from "@radix-ui/react-icons";
 import {Row} from "@tanstack/react-table";
-import {Doc} from "@/convex/_generated/dataModel";
-import {useMutation} from "convex/react";
-import {api} from "@/convex/_generated/api";
 import {Trash2Icon} from "lucide-react";
 
-const DropDownActions = ({row}: {row: Row<Doc<"expenses"> & {whoSpent: string}>}) => {
-  const deleteExpense = useMutation(api.expenses.deleteExpense);
+const DropDownActions = ({row}: {row: Row<any>}) => {
+  // TODO: Implement your own delete logic here
+  const deleteExpense = () => {};
 
   return (
     <DropdownMenu>
@@ -27,7 +25,7 @@ const DropDownActions = ({row}: {row: Row<Doc<"expenses"> & {whoSpent: string}>}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        <DropdownMenuItem onClick={() => deleteExpense({id: row.original._id})}>
+        <DropdownMenuItem onClick={() => deleteExpense()}>
           <Trash2Icon className="w-4 h-4 text-red-500 mr-2" />
           <span>Delete Expense</span>
         </DropdownMenuItem>

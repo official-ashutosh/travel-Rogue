@@ -3,10 +3,7 @@ import Header from "@/components/plan/Header";
 import PlanLayoutContent from "@/components/plan/PlanLayoutContent";
 import Progress from "@/components/Progress";
 import {Toaster} from "@/components/ui/toaster";
-import {api} from "@/convex/_generated/api";
-import {Id} from "@/convex/_generated/dataModel";
 import {Analytics} from "@vercel/analytics/react";
-import {fetchQuery} from "convex/nextjs";
 import {Metadata, ResolvingMetadata} from "next";
 
 export async function generateMetadata(
@@ -21,11 +18,15 @@ export async function generateMetadata(
   const token = await getAuthToken();
 
   try {
-    const plan = await fetchQuery(
-      api.plan.getSinglePlan,
-      {id: id as Id<"plan">, isPublic: false},
-      {token}
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || ""}/api/plans/${id}`,
+      {
+        headers: {Authorization: `Bearer ${token}`},
+        cache: "no-store",
+      }
     );
+    if (!res.ok) throw new Error("Unauthorized");
+    const plan = await res.json();
     return {
       title: plan ? plan.nameoftheplace : "Your Plan",
     };

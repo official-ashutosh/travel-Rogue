@@ -1,6 +1,5 @@
 "use client";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Doc} from "@/convex/_generated/dataModel";
 import {DollarSignIcon} from "lucide-react";
 import expense from "@/public/expense.svg";
 import {ReactNode, useMemo} from "react";
@@ -12,7 +11,7 @@ const ExpenseMetrics = ({
   preferredCurrency,
 }: {
   preferredCurrency: string;
-  expenses: (Doc<"expenses"> & {whoSpent: string})[];
+  expenses: {amount: number; category: string; whoSpent: string}[];
 }) => {
   if (!expenses || expenses.length === 0) return null;
 
@@ -26,7 +25,7 @@ const ExpenseMetrics = ({
     else return curr;
   });
 
-  const categoryCounts: {[key in Doc<"expenses">["category"]]: number} = {
+  const categoryCounts: {[key in string]: number} = {
     food: 0,
     commute: 0,
     shopping: 0,

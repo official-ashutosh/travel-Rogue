@@ -1,4 +1,3 @@
-import {Doc} from "@/convex/_generated/dataModel";
 import {
   Backpack,
   Clock3,
@@ -79,7 +78,7 @@ export const controlCenterSections: {
 ];
 
 export const planSections: {
-  id: keyof Doc<"plan">["contentGenerationState"] | "weather";
+  id: keyof ContentGenerationState | "weather";
   name: string;
   icon: ReactNode;
   isPublic: boolean;

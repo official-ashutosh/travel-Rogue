@@ -1,13 +1,25 @@
 import ExpenseSheet from "@/components/expenseTracker/ExpenseSheet";
 import {expenseCategories} from "@/lib/constants";
 import {Checkbox} from "@/components/ui/checkbox";
-import {Doc} from "@/convex/_generated/dataModel";
 import {CaretSortIcon} from "@radix-ui/react-icons";
 import {ColumnDef} from "@tanstack/react-table";
 import {Button} from "@/components/ui/button";
 import DropDownActions from "@/components/expenseTracker/DropDownActions";
 
-export const getColumns = (currency: string): ColumnDef<Doc<"expenses"> & {whoSpent: string}>[] => {
+// Define a local Expense type
+export type Expense = {
+  _id: string;
+  planId: string;
+  purpose: string;
+  whopaid: string;
+  whoSpent: string;
+  category: string;
+  amount: number;
+  date: string;
+  // Add other fields as needed
+};
+
+export const getColumns = (currency: string): ColumnDef<Expense & {whoSpent: string}>[] => {
   return [
     {
       id: "select",

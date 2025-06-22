@@ -1,19 +1,29 @@
 import Timeline from "@/components/Timeline";
 import SectionWrapper from "@/components/sections/SectionWrapper";
-import {AddIternaryDay} from "@/components/addNewItineraryDay/AddIternaryDay";
-import {Button} from "@/components/ui/button";
-import {Skeleton} from "@/components/ui/skeleton";
-import {Doc} from "@/convex/_generated/dataModel";
-import {Navigation, PlusCircle, PlusCircleIcon, PlusIcon} from "lucide-react";
+import { AddIternaryDay } from "@/components/addNewItineraryDay/AddIternaryDay";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Navigation, PlusCircle, PlusCircleIcon, PlusIcon } from "lucide-react";
+
+// Define a local Itinerary type
+export type ItineraryDay = {
+  title: string;
+  activities: {
+    morning: any[];
+    afternoon: any[];
+    evening: any[];
+  };
+  // Add other fields as needed
+};
 
 type ItineraryProps = {
-  itinerary: Doc<"plan">["itinerary"] | undefined;
+  itinerary: ItineraryDay[] | undefined;
   planId: string;
   isLoading: boolean;
   allowEdit: boolean;
 };
 
-const Itinerary = ({itinerary, planId, isLoading, allowEdit}: ItineraryProps) => {
+const Itinerary = ({ itinerary, planId, isLoading, allowEdit }: ItineraryProps) => {
   return (
     <SectionWrapper id="itinerary">
       <div className="mb-2 flex justify-between items-center">

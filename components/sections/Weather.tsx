@@ -3,9 +3,7 @@ import SectionWrapper from "@/components/sections/SectionWrapper";
 import {Input} from "@/components/ui/input";
 import {Skeleton} from "@/components/ui/skeleton";
 import {usePlanContext} from "@/contexts/PlanContextProvider";
-import {api} from "@/convex/_generated/api";
 import {CurrentWeatherResponse} from "@/lib/types/WeatherResponse";
-import {useAction} from "convex/react";
 import {
   Cloud,
   Compass,
@@ -22,13 +20,13 @@ import Image from "next/image";
 import {ReactNode, useEffect, useState} from "react";
 
 const Weather = ({placeName}: {placeName: string | undefined}) => {
-  const getWeather = useAction(api.weather.getCurrentWeather);
   const {setPlanState} = usePlanContext();
   const [weatherData, setWeatherData] = useState<CurrentWeatherResponse | undefined>(undefined);
 
   useEffect(() => {
     if (!placeName) return;
-    getWeather({placeName: placeName})
+    fetch(`/api/weather?placeName=${encodeURIComponent(placeName)}`)
+      .then((res) => res.json())
       .then((data) => {
         if (data) {
           setWeatherData(data);

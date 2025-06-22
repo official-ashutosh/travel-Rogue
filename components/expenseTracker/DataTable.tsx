@@ -31,26 +31,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Doc } from "@/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { getColumns } from "@/components/expenseTracker/DataColums";
+import { getColumns, Expense } from "@/components/expenseTracker/DataColums";
 
 export default function DataTable({
   data,
   preferredCurrency,
+  onDeleteMultiple,
 }: {
   preferredCurrency: string;
-  data: (Doc<"expenses"> & { whoSpent: string })[];
+  data: (Expense & { whoSpent: string })[];
+  onDeleteMultiple?: (ids: string[]) => Promise<void>;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
-
-  const deleteMultipleExpenses = useMutation(
-    api.expenses.deleteMultipleExpenses
-  );
 
   const columns = getColumns(preferredCurrency);
 
@@ -75,12 +70,25 @@ export default function DataTable({
 
   const selectedRows = table.getSelectedRowModel().rows;
 
+  // Default delete logic using REST API if onDeleteMultiple is not provided
+  const handleDeleteMultiple = async (ids: string[]) => {
+    if (!ids.length) return;
+    await fetch("/api/expenses/delete-multiple", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    });
+  };
+
   const deleteSelectedRows = async (
-    rows: Row<Doc<"expenses"> & { whoSpent: string }>[]
+    rows: Row<Expense & { whoSpent: string }>[]
   ) => {
     if (rows.length <= 0) return;
-
-    await deleteMultipleExpenses({ ids: rows.map((r) => r.original._id) });
+    if (onDeleteMultiple) {
+      await onDeleteMultiple(rows.map((r) => r.original._id));
+    } else {
+      await handleDeleteMultiple(rows.map((r) => r.original._id));
+    }
     table.resetRowSelection();
   };
 

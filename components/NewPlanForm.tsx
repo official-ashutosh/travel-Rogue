@@ -236,9 +236,7 @@ const NewPlanForm = ({
             onClick={() => form.handleSubmit(onSubmitEmptyPlan)()}
             aria-label="generate plan"
             type="submit"
-            disabled={
-              pendingEmptyPlan || pendingAIPlan || !form.formState.isValid
-            }
+            disabled={pendingEmptyPlan || pendingAIPlan || !form.formState.isValid}
             className="bg-blue-500 text-white hover:bg-blue-600 w-full"
           >
             {pendingEmptyPlan ? (
@@ -258,9 +256,7 @@ const NewPlanForm = ({
             onClick={() => form.handleSubmit(onSubmitAIPlan)()}
             aria-label="generate AI plan"
             type="submit"
-            disabled={
-              pendingAIPlan || pendingEmptyPlan || !form.formState.isValid
-            }
+            disabled={pendingAIPlan || pendingEmptyPlan || !form.formState.isValid}
             className="bg-indigo-500 text-white hover:bg-indigo-600 w-full group"
           >
             {pendingAIPlan ? (

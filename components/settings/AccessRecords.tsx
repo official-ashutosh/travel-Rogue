@@ -1,24 +1,18 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
 import { getDisplayName } from "@/lib/utils";
-import { useMutation } from "convex/react";
-import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useTransition } from "react";
 
 const AccessRecords = ({ planId }: { planId: string }) => {
-  const records = useQuery(api.access.getPlanAccessRecords, {
-    planId: planId as Id<"plan">,
-  });
-  const revokeAccess = useMutation(api.access.revokeAccess);
+  // TODO: Replace with your own backend logic or props
+  const records: any[] = [];
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
-  const revokeEmailInvite = async (id: Id<"access">, email: string) => {
+  const revokeEmailInvite = async (id: string, email: string) => {
     startTransition(async () => {
-      await revokeAccess({ id });
+      // TODO: Implement your own revoke logic here
     });
     toast({
       variant: "default",
@@ -38,12 +32,9 @@ const AccessRecords = ({ planId }: { planId: string }) => {
             key={record._id}
             className="px-5 py-2 
                         border border-solid border-border 
-                        shadow-sm rounded-md
-                        flex gap-5 justify-between items-center"
+                        rounded-lg flex items-center justify-between"
           >
-            <span className="text-sm text-muted-foreground">
-              {getDisplayName(record.firstName, record.lastName, record.email)}
-            </span>
+            <span>{getDisplayName(record.email)}</span>
             <Button
               variant="destructive"
               size="sm"

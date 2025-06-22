@@ -36,9 +36,6 @@ const ItineraryDayForm = ({planId, setOpen}: ItineraryDayFormProps) => {
     isDirty,
   } = useItineraryForm(planId);
 
-  // REMOVE: import { useMutation } from "convex/react";
-  // REMOVE: import { api } from "@/convex/_generated/api";
-  // REMOVE: import { Doc } from "@/convex/_generated/dataModel";
 
   // Add a placeholder for updateItinerary (replace with your MERN API call)
   const updateItinerary = async ({planId, itineraryDay}: {planId: string; itineraryDay: ItineraryType}) => {

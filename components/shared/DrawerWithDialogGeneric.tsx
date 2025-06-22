@@ -212,6 +212,4 @@ const CreditContent = ({
   );
 };
 
-// Convex/Clerk code has been fully removed. This file now uses REST API for user info and is fully migrated.
-
 export default DrawerWithDialog;

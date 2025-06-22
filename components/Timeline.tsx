@@ -1,10 +1,18 @@
 import ItineraryDayHeader from "@/components/ItineraryDayHeader";
-import {Doc} from "@/convex/_generated/dataModel";
 import {Sun, Sunrise, Sunset, TrashIcon} from "lucide-react";
 import {ReactNode} from "react";
 
+type ItineraryDay = {
+  title: string;
+  activities: {
+    morning: {itineraryItem: string; briefDescription: string}[];
+    afternoon: {itineraryItem: string; briefDescription: string}[];
+    evening: {itineraryItem: string; briefDescription: string}[];
+  };
+};
+
 type TimelineProps = {
-  itinerary: Doc<"plan">["itinerary"] | undefined;
+  itinerary: ItineraryDay[] | undefined;
   planId: string;
   allowEdit: boolean;
 };

@@ -1,4 +1,3 @@
-import { Doc } from "@/convex/_generated/dataModel";
 import navigationSvg from "@/public/card-navigation.svg";
 import {
   Card,
@@ -12,11 +11,19 @@ import { CalendarDaysIcon, MapPin, PlaneIcon } from "lucide-react";
 import { TooltipContainer } from "@/components/shared/Toolip";
 import { getFormattedDateRange } from "@/lib/utils";
 
+// Define a local Plan type
+export type Plan = {
+  _id: string;
+  nameoftheplace: string;
+  imageUrl?: string;
+  fromDate?: string;
+  toDate?: string;
+  isSharedPlan: boolean;
+  // Add other fields as needed
+};
+
 type PlanCardProps = {
-  plan: Doc<"plan"> & { isSharedPlan: boolean } & Pick<
-      Doc<"planSettings">,
-      "fromDate" | "toDate"
-    >;
+  plan: Plan;
   isPublic?: boolean;
 };
 
