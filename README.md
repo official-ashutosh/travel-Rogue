@@ -57,17 +57,6 @@ Travel Rogue transforms the way you plan trips by combining cutting-edge AI tech
 
 ---
 
-## 🖥️ Demo
-
-Check out the live demo: [https://travelrogue.site/](https://travelrogue.site/)
-
----
-
-## 🏗️ Architecture
-
-![Architecture Diagram](https://github.com/official-ashutosh/travel-Rogue/assets/26103679/de21a51b-6d95-427c-a00a-b919dd09c56e)
-
----
 
 ## 🛠️ Tech Stack
 
@@ -192,16 +181,6 @@ Check out the live demo: [https://travelrogue.site/](https://travelrogue.site/)
 ### Real-time Expense Tracking
 ![Expense Tracking](https://via.placeholder.com/800x400/DC2626/FFFFFF?text=Smart+Expense+Analytics)
 
-### Live Demo
-
-🔗 **Experience Travel Rogue:** [https://travelrogue.site/](https://travelrogue.site/)
-
----
-
-## 🏗️ Architecture Overview
-
-Travel Rogue follows a modern full-stack architecture:
-
 ```
 Frontend (Next.js + React)
     ↓
@@ -244,41 +223,6 @@ External APIs (Gemini AI, OpenWeather, Google Maps)
 
 ---
 
-## 💡 Contributing
-
-We welcome contributions from the travel and tech community! Here's how you can help:
-
-### Ways to Contribute
-- 🐛 **Bug Reports:** Found an issue? Let us know!
-- ✨ **Feature Requests:** Have ideas for new features?
-- 🔧 **Code Contributions:** Submit pull requests for improvements
-- 📖 **Documentation:** Help improve our guides and docs
-- 🌍 **Translations:** Help make Travel Rogue global
-
-### Getting Started
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes and add tests
-4. Commit your changes (`git commit -m 'Add amazing feature'`)
-5. Push to the branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🤝 Support & Community
-
-- � **Contact:** [support@travelrogue.site](mailto:support@travelrogue.site)
-- 🐛 **Issues:** [GitHub Issues](https://github.com/official-ashutosh/travel-Rogue/issues)
-- 💬 **Discussions:** [GitHub Discussions](https://github.com/official-ashutosh/travel-Rogue/discussions)
-- 🐦 **Updates:** Follow [@TravelRogue](https://twitter.com/travelrogue) for updates
-
----
 
 ## 🙏 Acknowledgments
 
