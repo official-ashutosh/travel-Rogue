@@ -276,7 +276,7 @@ button[data-localization-key="userProfile.start.dangerSection.deleteAccountButto
   }
 
   .animate-pulse-slow {
-    animation: pulse-slow 4s ease-in-out infinite;
+    animation: pulse-slow 3s infinite;
   }
 
   .animate-wiggle {
@@ -285,6 +285,10 @@ button[data-localization-key="userProfile.start.dangerSection.deleteAccountButto
 
   .animate-spin-slow {
     animation: spin 8s linear infinite;
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out forwards;
   }
 }
 
@@ -325,5 +329,16 @@ button[data-localization-key="userProfile.start.dangerSection.deleteAccountButto
   }
   50% {
     transform: rotate(3deg);
+  }
+}
+
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
