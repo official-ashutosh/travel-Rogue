@@ -2,52 +2,45 @@
 
 ## Your AI-powered travel companion for creating unforgettable journeys
 
-Travel Rogue transforms the way you plan trips by combining cutting-edge AI technology with comprehensive travel management tools. Whether you're planning a weekend getaway or a month-long adventure, our platform makes it effortless to create personalized itineraries, track expenses, and discover amazing destinations.
+Travel Rogue is a comprehensive full-stack travel planning platform that combines cutting-edge **AI technology** with modern web development to revolutionize how people plan, manage, and share their travel experiences. Built with the **MERN stack** and powered by **Google Gemini AI**, the platform delivers personalized travel itineraries, real-time expense tracking, and collaborative planning features.
 
-> **📁 Note:** This project has been migrated from Next.js to a MERN stack architecture. See [README-MERN.md](./README-MERN.md) and [MIGRATION-FINAL.md](./MIGRATION-FINAL.md) for details about the new structure and setup instructions.
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Site-blue)](https://travel-rogue.vercel.app)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-black)](https://github.com/official-ashutosh/travel-Rogue)
+[![Tech Stack](https://img.shields.io/badge/Stack-MERN-green)](#tech-stack)
 
 ---
 
 ## ✨ Key Features
 
 ### 🤖 **AI-Powered Trip Generation**
+- **Intelligent Itinerary Creation**: Generate comprehensive travel plans using Google Gemini AI with natural language prompts
+- **Personalized Recommendations**: AI analyzes travel preferences, companion type, budget, and interests for tailored suggestions
+- **Smart Activity Matching**: Automatic activity curation based on destination, duration, and personal preferences
+- **Multi-format Output**: Generates detailed itineraries, packing lists, cuisine recommendations, and best visit times
 
-- **Smart Planning with Gemini AI:** Simply describe your dream trip (e.g., "5-day romantic getaway to Paris for $2000") and watch our AI create a complete, personalized itinerary
-- **Intelligent Recommendations:** Get tailored suggestions based on your travel preferences, dates, and companion type
-- **Activity Matching:** AI considers your interests (adventure, culture, food, etc.) to curate perfect activities
-
-### 📋 **Comprehensive Itinerary Management**
-
-- **Day-by-Day Planning:** Organized morning, afternoon, and evening activities with detailed descriptions
-- **Interactive Timeline:** Visual itinerary with easy editing and rearrangement capabilities
-- **Location Integration:** Interactive maps showing all your planned destinations
-- **Custom Activities:** Add, edit, or remove activities to perfectly match your style
+### 📋 **Comprehensive Travel Management**
+- **Day-by-Day Itinerary Planning**: Structured morning, afternoon, and evening activity scheduling
+- **Interactive Timeline Management**: Visual itinerary with drag-and-drop editing capabilities
+- **Location-Based Services**: Google Maps integration with custom markers and route optimization
+- **Weather Integration**: Real-time weather data and forecasts using OpenWeather API
 
 ### 💰 **Smart Expense Tracking**
-
-- **Real-time Budget Management:** Track expenses by category (food, transport, shopping, etc.)
-- **Multi-Currency Support:** Automatic currency conversion and preferred currency settings
-- **Expense Analytics:** Visual insights into your spending patterns and budget allocation
-- **Collaborative Expenses:** Share and split costs with travel companions
-
-### 🌤️ **Live Weather Integration**
-
-- **Real-time Weather Data:** Current conditions and forecasts powered by OpenWeather API
-- **Trip Planning Insights:** Weather-based recommendations for packing and activities
-- **Visual Weather Display:** Intuitive weather cards with temperature, humidity, and visibility
-
-### 🗺️ **Smart Destination Discovery**
-
-- **Top Places to Visit:** AI-curated list of must-see attractions and hidden gems
-- **Interactive Maps:** Google Maps integration with custom markers and directions
-- **Local Cuisine Recommendations:** Discover authentic local foods and restaurants
-- **Adventure Activities:** Personalized activity suggestions based on your preferences
+- **Real-time Budget Management**: Track expenses by category (accommodation, food, transport, activities)
+- **Multi-Currency Support**: Automatic currency conversion with real-time exchange rates
+- **Expense Analytics**: Visual insights and spending pattern analysis with charts and reports
+- **Collaborative Expense Splitting**: Share and split costs with travel companions
 
 ### 👥 **Social & Collaborative Features**
+- **Community Plans**: Browse public travel plans and get inspired by other travelers
+- **Plan Sharing**: Share itineraries with friends or publish for community inspiration
+- **Invitation System**: Invite collaborators to contribute to travel plans
+- **User Authentication**: Secure JWT-based authentication with profile management
 
-- **Community Plans:** Browse and get inspired by public travel plans from other users
-- **Plan Sharing:** Share your itineraries with friends or make them public for the community
-- **Companion Planning:** Specify travel companions (solo, couple, friends, family) for tailored recommendations
+### 🗺️ **Smart Destination Discovery**
+- **Location Autocomplete**: Google Places API integration for intelligent location search
+- **Top Attractions**: AI-curated lists of must-visit places with coordinates and descriptions
+- **Local Cuisine Recommendations**: Discover authentic local foods and restaurant suggestions
+- **Adventure Activity Suggestions**: Personalized activity recommendations based on interests
 - **Collaborative Editing:** Invite others to contribute to your travel plans
 
 ### 📱 **Modern User Experience**
@@ -62,32 +55,53 @@ Travel Rogue transforms the way you plan trips by combining cutting-edge AI tech
 
 ## 🛠️ Tech Stack
 
-- **Frontend:** Next.js 14, React 18, TypeScript
-- **Styling:** Tailwind CSS, Shadcn-UI components
-- **Backend:** Next.js API Routes, PostgreSQL
-- **AI Integration:** Google Gemini API for intelligent travel planning
-- **Weather Data:** OpenWeather API for real-time weather information
-- **Maps:** Google Maps API for location services and mapping
-- **Database:** PostgreSQL for data persistence
-- **Authentication:** Custom JWT-based authentication
-- **State Management:** React Context API
-- **Form Handling:** React Hook Form with Zod validation
-- **Deployment:** Vercel-ready with environment configuration
+### **Frontend**
+
+- **React.js 18** - Modern component-based UI library
+- **React Router Dom** - Client-side routing and navigation
+- **Tailwind CSS** - Utility-first CSS framework for responsive design
+- **Lucide React** - Beautiful icon library for consistent UI
+- **Axios** - HTTP client for API communication
+- **React Hook Form** - Performant form handling with validation
+
+### **Backend**
+
+- **Node.js** - JavaScript runtime environment
+- **Express.js** - Fast, unopinionated web framework
+- **MongoDB** - NoSQL database for flexible data storage
+- **Mongoose** - ODM for MongoDB with schema validation
+- **JWT** - JSON Web Tokens for secure authentication
+- **Bcrypt** - Password hashing for security
+
+### **AI & External APIs**
+
+- **Google Gemini AI** - Advanced AI for intelligent travel planning
+- **Google Maps API** - Location services and mapping functionality
+- **Google Places API** - Location search and autocomplete
+- **OpenWeather API** - Real-time weather data and forecasts
+
+### **DevOps & Security**
+
+- **Helmet** - Security middleware for Express applications
+- **CORS** - Cross-origin resource sharing configuration
+- **Express Rate Limit** - API rate limiting for security
+- **Morgan** - HTTP request logging middleware
+- **Compression** - Response compression for performance
 
 ---
 
-## � Getting Started
+## 🚀 Getting Started
 
-### Prerequisites
+### **Prerequisites**
 
 - Node.js 18+ and npm
-- PostgreSQL database
+- MongoDB database (local or cloud)
 - API keys for:
   - Google Gemini AI
-  - OpenWeather API  
   - Google Maps API
+  - OpenWeather API
 
-### Installation
+### **Installation**
 
 1. **Clone the repository:**
 
@@ -96,144 +110,303 @@ Travel Rogue transforms the way you plan trips by combining cutting-edge AI tech
    cd travel-Rogue
    ```
 
-2. **Install dependencies:**
+2. **Install backend dependencies:**
 
    ```bash
+   cd backend
    npm install
    ```
 
-3. **Set up environment variables:**
+3. **Install frontend dependencies:**
 
-   Create a `.env.local` file in the root directory with:
+   ```bash
+   cd ../frontend
+   npm install
+   ```
+
+4. **Environment Configuration:**
+
+   **Backend (.env):**
 
    ```env
    # Database
-   DATABASE_URL=postgresql://username:password@localhost:5432/travel_rogue
-
+   MONGODB_URI=mongodb://localhost:27017/travel_rogue
+   
+   # JWT Configuration
+   JWT_SECRET=your-super-secret-jwt-key
+   
    # AI Services
    GEMINI_API_KEY=your_gemini_api_key
+   
+   # External APIs
+   GOOGLE_MAPS_API_KEY=your_google_maps_api_key
    OPENWEATHER_API_KEY=your_openweather_api_key
-
-   # Maps & Location
-   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-
-   # App Configuration
-   NEXT_PUBLIC_BASE_URL=http://localhost:3000
+   
+   # Server Configuration
+   PORT=5000
+   NODE_ENV=development
    ```
 
-4. **Set up the database:**
+   **Frontend (.env):**
 
-   ```sql
-   -- Create the main tables
-   CREATE TABLE plans (
-     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-     nameoftheplace TEXT,
-     preferred_currency TEXT DEFAULT 'INR',
-     user_id TEXT,
-     created_at TIMESTAMP DEFAULT NOW()
-   );
-
-   CREATE TABLE expenses (
-     _id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-     plan_id uuid REFERENCES plans(id) ON DELETE CASCADE,
-     amount NUMERIC,
-     description TEXT,
-     category TEXT,
-     date DATE
-   );
-
-   CREATE TABLE feedback (
-     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-     plan_id uuid REFERENCES plans(id) ON DELETE CASCADE,
-     label TEXT,
-     message TEXT,
-     created_at TIMESTAMP DEFAULT NOW()
-   );
+   ```env
+   REACT_APP_API_URL=http://localhost:5000/api
+   REACT_APP_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
    ```
 
-5. **Run the development server:**
+5. **Start the development servers:**
+
+   **Backend:**
 
    ```bash
-   npm run dev
+   cd backend
+   npm start
    ```
 
-6. **Open your browser:**
+   **Frontend:**
 
-   Visit [http://localhost:3000](http://localhost:3000) to see your Travel Rogue instance!
+   ```bash
+   cd frontend
+   npm start
+   ```
 
-### API Endpoints
+6. **Access the application:**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:5000
 
-- `GET /api/plans` - List user's travel plans
-- `POST /api/plans` - Create a new travel plan
-- `GET /api/plans/[planId]` - Get specific plan details
-- `PATCH /api/plans/[planId]` - Update plan information
-- `DELETE /api/plans/[planId]` - Delete a travel plan
-- `GET /api/weather` - Get weather data for a location
-- `POST /api/expenses/delete-multiple` - Bulk delete expenses
-- `GET /api/community-plans` - Browse public community plans
+---
 
-## 📸 Screenshots & Demo
+## 📊 API Endpoints
 
-### AI-Powered Plan Generation
-![AI Plan Generation](https://via.placeholder.com/800x400/4F46E5/FFFFFF?text=AI+Travel+Plan+Generation)
+### **Authentication**
 
-### Interactive Itinerary Management  
-![Itinerary Management](https://via.placeholder.com/800x400/059669/FFFFFF?text=Day-by-Day+Itinerary+Planning)
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `GET /api/auth/me` - Get current user profile
+- `POST /api/auth/forgot-password` - Password reset request
 
-### Real-time Expense Tracking
-![Expense Tracking](https://via.placeholder.com/800x400/DC2626/FFFFFF?text=Smart+Expense+Analytics)
+### **Travel Plans**
 
-```
-Frontend (Next.js + React)
-    ↓
-API Layer (Next.js API Routes)
-    ↓
-Database (PostgreSQL)
-    ↓
-External APIs (Gemini AI, OpenWeather, Google Maps)
-```
+- `GET /api/plans` - Get user's travel plans
+- `POST /api/plans` - Create new travel plan (with AI generation)
+- `GET /api/plans/:id` - Get specific plan details
+- `PUT /api/plans/:id` - Update plan information
+- `DELETE /api/plans/:id` - Delete travel plan
 
-### Key Components:
-- **Client-Side:** React components with TypeScript for type safety
-- **Server-Side:** Next.js API routes handling business logic
-- **AI Integration:** Gemini API for intelligent content generation
-- **Real-time Data:** OpenWeather API for current weather conditions
-- **Data Persistence:** PostgreSQL with optimized schemas
-- **Authentication:** JWT-based session management
+### **AI Services**
+
+- `POST /api/ai/generate-plan` - Generate AI-powered travel plan
+- `POST /api/ai/suggest-destinations` - Get destination suggestions
+
+### **Location Services**
+
+- `GET /api/locations/search?q={query}` - Search locations
+- `GET /api/locations/details/:placeId` - Get place details
+- `GET /api/locations/popular` - Get popular destinations
+
+### **Weather Services**
+
+- `GET /api/weather/current/:location` - Current weather data
+- `GET /api/weather/forecast/:location` - Weather forecast
+
+### **Expense Management**
+
+- `POST /api/expenses` - Create expense record
+- `GET /api/expenses/plan/:planId` - Get plan expenses
+- `PUT /api/expenses/:id` - Update expense
+- `DELETE /api/expenses/:id` - Delete expense
 
 ---
 
 ## 🌟 Use Cases
 
-### For Solo Travelers
-- Generate personalized itineraries based on your interests
-- Track expenses and stay within budget
-- Discover hidden gems and local experiences
-- Access real-time weather information
+### **For Solo Travelers**
 
-### For Groups & Families  
-- Collaborative planning with multiple contributors
-- Shared expense tracking and splitting
-- Activity suggestions for different age groups
-- Public plan sharing for inspiration
+- Generate personalized itineraries based on individual interests and budget
+- Track personal expenses and maintain budget discipline
+- Discover hidden gems and authentic local experiences
+- Access real-time weather information for better planning
 
-### For Travel Enthusiasts
-- Browse community plans for inspiration
-- Share your favorite trips with others
-- Discover trending destinations
-- Build a library of memorable journeys
+### **For Groups & Families**
+
+- Collaborative planning with multiple contributors and shared decision-making
+- Expense sharing and splitting with transparent cost tracking
+- Activity suggestions suitable for different age groups and interests
+- Group invitation system for seamless collaboration
+
+### **For Travel Enthusiasts**
+
+- Browse community-shared plans for destination inspiration
+- Share favorite trips and travel experiences with the community
+- Discover trending destinations and off-the-beaten-path locations
+- Build a personal library of memorable travel experiences
+
+### **For Travel Bloggers & Influencers**
+
+- Create detailed, shareable itineraries for audience engagement
+- Generate content-rich travel plans with comprehensive information
+- Export and format travel plans for blog posts and social media
+- Community feature for building follower engagement
 
 ---
 
+## 🏗️ Architecture
+
+```text
+Frontend (React.js)
+    ↓ HTTP/REST API
+Backend (Express.js + Node.js)
+    ↓ ODM (Mongoose)
+Database (MongoDB)
+    ↓ External APIs
+AI Services (Google Gemini) + Location APIs (Google Maps) + Weather (OpenWeather)
+```
+
+### **Key Components:**
+
+- **Client-Side**: React components with modern hooks and context for state management
+- **Server-Side**: Express.js REST API with middleware for security and validation
+- **AI Integration**: Google Gemini API for intelligent content generation and recommendations
+- **Real-time Data**: OpenWeather API integration for current weather conditions and forecasts
+- **Data Persistence**: MongoDB with Mongoose for flexible schema design and data validation
+- **Authentication**: JWT-based session management with secure password hashing
+
+---
+
+## 📱 Features in Detail
+
+### **AI-Powered Planning**
+
+- Natural language processing for travel requests
+- Intelligent recommendation engine based on user preferences
+- Automatic itinerary generation with time-optimized scheduling
+- Smart budget allocation and expense prediction
+
+### **Real-time Data Integration**
+
+- Live weather updates and forecasts for travel dates
+- Currency conversion with real-time exchange rates
+- Location-based services with accurate geographical data
+- Traffic and route optimization for transportation planning
+
+### **User Experience**
+
+- Responsive design optimized for desktop, tablet, and mobile devices
+- Intuitive drag-and-drop interface for itinerary management
+- Progressive web app capabilities for offline access
+- Dark/light theme toggle for personalized user experience
+
+### **Security & Performance**
+
+- JWT-based authentication with secure session management
+- Rate limiting and request throttling for API protection
+- Input validation and sanitization for data security
+- Optimized database queries and response compression
+
+---
+
+## 🔧 Development
+
+### **Project Structure**
+
+```text
+travel-Rogue/
+├── backend/                    # Express.js backend
+│   ├── src/
+│   │   ├── controllers/        # Route controllers
+│   │   ├── models/            # Mongoose schemas
+│   │   ├── routes/            # API routes
+│   │   ├── middleware/        # Custom middleware
+│   │   ├── services/          # External service integrations
+│   │   └── config/            # Configuration files
+│   └── package.json
+├── frontend/                   # React.js frontend
+│   ├── src/
+│   │   ├── components/        # Reusable components
+│   │   ├── pages/             # Page components
+│   │   ├── contexts/          # React contexts
+│   │   ├── hooks/             # Custom hooks
+│   │   ├── lib/               # Utility functions
+│   │   └── styles/            # CSS and styling
+│   └── package.json
+└── README.md
+```
+
+### **Available Scripts**
+
+**Backend:**
+
+```bash
+npm start          # Start production server
+npm run dev        # Start development server with nodemon
+npm test          # Run test suite
+npm run lint      # Run ESLint for code quality
+```
+
+**Frontend:**
+
+```bash
+npm start         # Start development server
+npm run build     # Build for production
+npm test          # Run test suite
+npm run lint      # Run ESLint for code quality
+```
+
+---
+
+## 🚀 Deployment
+
+### **Production Build**
+
+```bash
+# Build frontend for production
+cd frontend && npm run build
+
+# Start backend in production mode
+cd backend && NODE_ENV=production npm start
+```
+
+### **Environment Variables for Production**
+
+- Update MongoDB URI to production database
+- Configure secure JWT secrets
+- Set appropriate CORS origins
+- Configure rate limiting for production traffic
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
 
 ## 🙏 Acknowledgments
 
 - **Google Gemini AI** for powerful travel planning capabilities
-- **OpenWeather** for reliable weather data
+- **OpenWeather** for reliable weather data APIs
 - **Google Maps** for comprehensive location services
-- **Vercel** for seamless deployment and hosting
-- **Our Contributors** for making Travel Rogue better every day
+- **MongoDB** for flexible and scalable database solutions
+- **React.js** and **Express.js** communities for excellent documentation and support
+
+---
+
+## 📞 Support
+
+For support, email support@travel-rogue.com or create an issue in the GitHub repository.
 
 ---
 
 *Made with ❤️ for travelers around the world*
+
+**⭐ Star this repository if you found it helpful!**
