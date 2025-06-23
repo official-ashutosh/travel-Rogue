@@ -56,9 +56,15 @@ function App() {
         <Route 
           path="/plans/new" 
           element={user ? <NewPlanPage /> : <Navigate to="/login" replace />} 
-        />        <Route 
+        />        
+        <Route 
           path="/plans/:planId/plan" 
           element={user ? <PlanDetailPage /> : <Navigate to="/login" replace />} 
+        />
+        {/* Community Plan Details Route */}
+        <Route 
+          path="/plans/:planId/community-plan" 
+          element={<PlanDetailPage isPublic={true} />} 
         />
         <Route 
           path="/plans/:planId" 
