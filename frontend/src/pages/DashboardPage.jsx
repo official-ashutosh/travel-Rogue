@@ -6,15 +6,19 @@ import {
   List, 
   TrendingUp,
   MapPin,
-  Users
+  Users,
+  DollarSign,
+  CreditCard,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '../components/ui/Button.jsx';
 import { Input } from '../components/ui/Input.jsx';
 import { Badge } from '../components/ui/Badge.jsx';
+import { Card, CardContent } from '../components/ui/Card.jsx';
 import ModernPlanCard from '../components/dashboard/ModernPlanCard.jsx';
 import ModernNoPlans from '../components/dashboard/ModernNoPlans.jsx';
 import GeneratePlanButton from '../components/GeneratePlanButton.jsx';
-import api from '../lib/api.js';
+import { plansAPI, dashboardAPI, userAPI } from '../lib/api.js';
 
 const DashboardPage = () => {
   const [searchPlanText, setSearchPlanText] = useState("");
@@ -24,16 +28,37 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('grid');
   const [sortBy, setSortBy] = useState('recent');
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [userCredits, setUserCredits] = useState(0);
 
   useEffect(() => {
     fetchPlans();
     fetchCommunityPlans();
+    fetchDashboardStats();
+    fetchUserCredits();
   }, []);
 
+  const fetchDashboardStats = async () => {
+    try {
+      const response = await dashboardAPI.getStats();
+      setDashboardStats(response.data);
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    }
+  };
+
+  const fetchUserCredits = async () => {
+    try {
+      const response = await userAPI.getCredits();
+      setUserCredits(response.data.credits || 0);
+    } catch (error) {
+      console.error('Error fetching user credits:', error);
+    }
+  };
   const fetchPlans = async () => {
     try {
-      const response = await api.get('/plans');
-      setPlans(response.data.plans || []);
+      const response = await plansAPI.getUserPlans();
+      setPlans(response.data || []);
     } catch (error) {
       console.error('Error fetching plans:', error);
       setPlans([]);
@@ -44,8 +69,8 @@ const DashboardPage = () => {
 
   const fetchCommunityPlans = async () => {
     try {
-      const response = await api.get('/community-plans');
-      setCommunityPlans(response.data.plans || []);
+      const response = await plansAPI.getPublicPlans();
+      setCommunityPlans(response.data || []);
     } catch (error) {
       console.error('Error fetching community plans:', error);
       setCommunityPlans([]);
@@ -53,7 +78,8 @@ const DashboardPage = () => {
   };
 
   const sortPlans = (plansToSort, sortOption) => {
-    const sorted = [...plansToSort];
+    const safePlans = Array.isArray(plansToSort) ? plansToSort : [];
+    const sorted = [...safePlans];
     switch (sortOption) {
       case 'recent':
         return sorted.sort((a, b) => 
@@ -74,6 +100,7 @@ const DashboardPage = () => {
 
   const getFilteredAndSortedPlans = () => {
     let plansToProcess = filteredPlans ?? plans;
+    if (!Array.isArray(plansToProcess)) plansToProcess = [];
     return sortPlans(plansToProcess, sortBy);
   };
 
@@ -299,6 +326,79 @@ const DashboardPage = () => {
             )}
           </div>
         )}
+      </div>
+
+      {/* Quick Actions & Stats Cards */}
+      <div className="lg:px-20 px-6 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {/* Credits Card */}
+          <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-100 text-sm">AI Credits</p>
+                  <p className="text-2xl font-bold">{userCredits}</p>
+                </div>
+                <CreditCard className="h-8 w-8 text-blue-200" />
+              </div>
+              <Link to="/payments" className="text-blue-100 hover:text-white text-xs underline mt-2 inline-block">
+                Purchase more →
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Expenses Card */}
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm">Total Expenses</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    ${dashboardStats?.totalExpenses || '0.00'}
+                  </p>
+                </div>
+                <DollarSign className="h-8 w-8 text-green-600" />
+              </div>
+              <Link to="/expenses" className="text-green-600 hover:text-green-700 text-xs underline mt-2 inline-block">
+                View details →
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Community Plans */}
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm">Community Plans</p>
+                  <p className="text-2xl font-bold text-orange-600">{communityPlans.length}</p>
+                </div>
+                <Users className="h-8 w-8 text-orange-600" />
+              </div>
+              <Link to="/community-plans" className="text-orange-600 hover:text-orange-700 text-xs underline mt-2 inline-block">
+                Explore →
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Feedback */}
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm">Feedback</p>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {dashboardStats?.feedbackCount || '0'}
+                  </p>
+                </div>
+                <MessageSquare className="h-8 w-8 text-purple-600" />
+              </div>
+              <Link to="/feedback" className="text-purple-600 hover:text-purple-700 text-xs underline mt-2 inline-block">
+                Submit →
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </section>
   );

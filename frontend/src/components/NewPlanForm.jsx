@@ -11,14 +11,11 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/Button.jsx';
 import { Input } from './ui/Input.jsx';
-import { useAuth } from '../contexts/AuthContext.jsx';
 import api from '../lib/api.js';
 import LocationAutoComplete from './LocationAutoComplete.jsx';
 import { ACTIVITY_PREFERENCES, COMPANION_PREFERENCES } from '../lib/constants.js';
 
-const NewPlanForm = ({ closeModal }) => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
+const NewPlanForm = ({ closeModal }) => {  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [selectedActivities, setSelectedActivities] = useState([]);
   
@@ -63,7 +60,6 @@ const NewPlanForm = ({ closeModal }) => {
       return updated;
     });
   };
-
   const validateForm = () => {
     if (!formData.nameoftheplace.trim()) {
       alert('Please enter a destination');
@@ -77,32 +73,40 @@ const NewPlanForm = ({ closeModal }) => {
       alert('End date must be after start date');
       return false;
     }
+    // Remove description validation - it's optional
     return true;
   };
-
   const handleCreatePlan = async (withAI = false) => {
     if (!validateForm()) return;
 
     setLoading(true);
     try {
       const planData = {
-        ...formData,
-        user_id: user?.id,
-        activityPreferences: selectedActivities,
-        generateWithAI: withAI
+        nameoftheplace: formData.nameoftheplace,
+        userPrompt: formData.abouttheplace || `I want to visit ${formData.nameoftheplace}`,
+        isGeneratedUsingAI: withAI,
+        startDate: formData.fromdate,
+        endDate: formData.todate,
+        budgetRange: formData.budget ? `$${formData.budget}` : null,
+        travelStyle: formData.companion || 'solo',
+        interests: selectedActivities,
+        // Additional fields that might be useful for AI generation
+        numberOfDays: formData.fromdate && formData.todate 
+          ? Math.ceil((new Date(formData.todate) - new Date(formData.fromdate)) / (1000 * 60 * 60 * 24))
+          : null
       };
 
       const response = await api.post('/plans', planData);
       
-      if (response.data.success) {
+      if (response.data.status === 'success') {
         if (closeModal) closeModal();
-        navigate(`/plans/${response.data.plan.id}/plan`);
+        navigate(`/plans/${response.data.data.plan._id}`);
       } else {
         throw new Error(response.data.message || 'Failed to create plan');
       }
     } catch (error) {
       console.error('Error creating plan:', error);
-      alert(error.response?.data?.message || 'Failed to create plan. Please try again.');
+      alert(error.response?.data?.message || error.message || 'Failed to create plan. Please try again.');
     } finally {
       setLoading(false);
     }

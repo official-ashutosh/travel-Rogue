@@ -6,7 +6,7 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
-const connectDB = require('./config/database');
+const { connectDB } = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 
 // Route imports
@@ -14,10 +14,15 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const planRoutes = require('./routes/plans');
 const expenseRoutes = require('./routes/expenses');
-// const paymentRoutes = require('./routes/payments');
-// const feedbackRoutes = require('./routes/feedback');
-// const inviteRoutes = require('./routes/invites');
+const paymentRoutes = require('./routes/payments');
+const feedbackRoutes = require('./routes/feedback');
+const inviteRoutes = require('./routes/invites');
 const dashboardRoutes = require('./routes/dashboard');
+// New route imports
+const aiRoutes = require('./routes/ai');
+const weatherRoutes = require('./routes/weather');
+const communityRoutes = require('./routes/community');
+const locationRoutes = require('./routes/locations');
 
 const app = express();
 
@@ -71,10 +76,14 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/expenses', expenseRoutes);
-// app.use('/api/payments', paymentRoutes);
-// app.use('/api/feedback', feedbackRoutes);
-// app.use('/api/invites', inviteRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api/invites', inviteRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/weather', weatherRoutes);
+app.use('/api/community', communityRoutes);
+app.use('/api/locations', locationRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

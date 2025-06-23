@@ -40,7 +40,11 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
-  }
+  },
+  likedPlans: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Plan'
+  }]
 }, {
   timestamps: true,
   toJSON: {

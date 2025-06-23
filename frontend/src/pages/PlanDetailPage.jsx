@@ -15,7 +15,7 @@ import {
 import { Button } from '../components/ui/Button.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card.jsx';
 import { Badge } from '../components/ui/Badge.jsx';
-import api from '../lib/api.js';
+import { plansAPI, communityAPI, aiAPI } from '../lib/api.js';
 import { 
   planSections, 
   ACTIVITY_PREFERENCES,
@@ -34,20 +34,28 @@ import {
 import EnhancedItinerary from '../components/sections/EnhancedItinerary.jsx';
 import EnhancedTopPlacesToVisit from '../components/sections/EnhancedTopPlacesToVisit.jsx';
 
-const PlanDetailPage = () => {
+const PlanDetailPage = ({ isPublic = false }) => {
   const { planId } = useParams();
   const navigate = useNavigate();
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-
   useEffect(() => {
     const fetchPlan = async () => {
       try {
         setLoading(true);
-        const response = await api.get(`/api/plans/${planId}`);
-        setPlan(response.data.plan);
+        let response;
+        
+        if (isPublic) {
+          // Fetch from community API for public plans
+          response = await communityAPI.getCommunityPlan(planId);
+          setPlan(response.data);
+        } else {
+          // Fetch from plans API for user plans
+          response = await plansAPI.getPlan(planId);
+          setPlan(response.data);
+        }
       } catch (error) {
         console.error('Error fetching plan:', error);
         // If plan not found, redirect to dashboard 
@@ -60,58 +68,58 @@ const PlanDetailPage = () => {
     if (planId) {
       fetchPlan();
     }
-  }, [planId, navigate]);
-
+  }, [planId, navigate, isPublic]);
   const generateWithAI = async () => {
-    if (!plan) return;
+    if (!plan || isPublic) {
+      // Don't allow AI generation for public plans
+      return;
+    }
     
     setIsGeneratingAI(true);
     try {
-      // Generate place info (batch 1)
-      const placeInfoResponse = await api.post('/api/ai/generate-place-info', {
-        promptText: `Generate information about ${plan.nameoftheplace}`
+      // Use the new AI API to generate a complete plan
+      const response = await aiAPI.generatePlan({
+        nameoftheplace: plan.nameoftheplace,
+        userPrompt: `Generate comprehensive travel information for ${plan.nameoftheplace}`,
+        numberOfDays: 3, // Default to 3 days
+        budgetRange: 'medium',
+        travelStyle: 'balanced',
+        interests: []
       });
 
-      // Generate recommendations (batch 2)  
-      const recommendationsResponse = await api.post('/api/ai/generate-recommendations', {
-        userPrompt: `Generate recommendations for ${plan.nameoftheplace}`,
-        fromDate: plan.fromdate,
-        toDate: plan.todate,
-        activityPreferences: [],
-        companion: []
-      });
+      if (response.success) {
+        const aiData = response.data.plan;
+        
+        // Update plan with AI data
+        const updatedPlan = {
+          ...plan,
+          abouttheplace: aiData.abouttheplace || plan.abouttheplace,
+          besttimetovisit: aiData.besttimetovisit,
+          adventuresactivitiestodo: aiData.adventuresactivitiestodo,
+          localcuisinerecommendations: aiData.localcuisinerecommendations,
+          packingchecklist: aiData.packingchecklist,
+          topplacestovisit: aiData.topplacestovisit,
+          itinerary: aiData.itinerary
+        };
 
-      // Generate itinerary (batch 3)
-      const itineraryResponse = await api.post('/api/ai/generate-itinerary', {
-        userPrompt: `Generate itinerary for ${plan.nameoftheplace}`,
-        fromDate: plan.fromdate,
-        toDate: plan.todate,
-        activityPreferences: [],
-        companion: []
-      });      // Update plan with AI data
-      const updatedPlan = {
-        ...plan,
-        abouttheplace: placeInfoResponse.data.data.abouttheplace || plan.abouttheplace,
-        best_time_to_visit: placeInfoResponse.data.data.besttimetovisit,
-        top_adventure_activities: recommendationsResponse.data.data.adventuresactivitiestodo,
-        local_cuisine_recommendations: recommendationsResponse.data.data.localcuisinerecommendations,
-        packing_checklist: recommendationsResponse.data.data.packingchecklist,
-        top_places_to_visit: itineraryResponse.data.data.topplacestovisit,
-        itinerary: itineraryResponse.data.data.itinerary
-      };      setPlan(updatedPlan);
-      
-      // Update plan in database
-      try {
-        await api.put(`/api/plans/${planId}`, {
-          best_time_to_visit: updatedPlan.best_time_to_visit,
-          top_adventure_activities: updatedPlan.top_adventure_activities,
-          local_cuisine_recommendations: updatedPlan.local_cuisine_recommendations,
-          packing_checklist: updatedPlan.packing_checklist,
-          top_places_to_visit: updatedPlan.top_places_to_visit
-        });
-        console.log('Plan updated successfully in database');
-      } catch (updateError) {
-        console.error('Error updating plan in database:', updateError);
+        setPlan(updatedPlan);
+        
+        // Update plan in database
+        try {
+          await plansAPI.updatePlan(planId, {
+            besttimetovisit: updatedPlan.besttimetovisit,
+            adventuresactivitiestodo: updatedPlan.adventuresactivitiestodo,
+            localcuisinerecommendations: updatedPlan.localcuisinerecommendations,
+            packingchecklist: updatedPlan.packingchecklist,
+            topplacestovisit: updatedPlan.topplacestovisit,
+            itinerary: updatedPlan.itinerary
+          });
+          console.log('Plan updated successfully in database');
+        } catch (updateError) {
+          console.error('Error updating plan in database:', updateError);
+        }
+      } else {
+        console.error('AI generation failed:', response.error);
       }
       
     } catch (error) {
@@ -440,24 +448,27 @@ const PlanDetailPage = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button className="w-full" variant="outline">
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit Plan
-                  </Button>
+                </CardHeader>                <CardContent className="space-y-3">
+                  {!isPublic && (
+                    <>
+                      <Button className="w-full" variant="outline">
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Plan
+                      </Button>
+                      <Button 
+                        className="w-full" 
+                        variant="outline" 
+                        onClick={generateWithAI}
+                        disabled={isGeneratingAI}
+                      >
+                        <Wand2 className="w-4 h-4 mr-2" />
+                        {isGeneratingAI ? 'Generating...' : 'Generate with AI'}
+                      </Button>
+                    </>
+                  )}
                   <Button className="w-full" variant="outline">
                     <Share2 className="w-4 h-4 mr-2" />
                     Share Plan
-                  </Button>
-                  <Button 
-                    className="w-full" 
-                    variant="outline" 
-                    onClick={generateWithAI}
-                    disabled={isGeneratingAI}
-                  >
-                    <Wand2 className="w-4 h-4 mr-2" />
-                    {isGeneratingAI ? 'Generating...' : 'Generate with AI'}
                   </Button>
                 </CardContent>
               </Card>

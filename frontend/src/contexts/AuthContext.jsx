@@ -1,65 +1,36 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../lib/utils';
+import { authAPI } from '../lib/api.js';
 
 const AuthContext = createContext(null);
-
-// Configure axios defaults
-axios.defaults.baseURL = API_BASE_URL;
-
-// Add request interceptor to include token
-axios.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Add response interceptor to handle token expiration
-axios.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const [error, setError] = useState(null);
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const response = await axios.get('/auth/me');
-          setUser(response.data.user);
-        } catch (error) {
-          console.error('Auth initialization failed:', error);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await authAPI.getMe();
+          setUser(response.data.data?.user || response.data.user || response.data);
         }
+      } catch (error) {
+        console.error('Auth initialization failed:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     initAuth();
   }, []);
   const login = async (email, password) => {
     try {
-      const response = await axios.post('/auth/signin', { email, password });
-      const { token, user } = response.data;
+      setLoading(true);
+      const response = await authAPI.login({ email, password });
+      const { token, user } = response.data.data || response.data;
       
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
@@ -68,16 +39,20 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user };
     } catch (error) {
       console.error('Login failed:', error);
+      setError(error.response?.data?.message || 'Login failed');
       return {
         success: false,
         error: error.response?.data?.error || error.response?.data?.message || 'Login failed'
       };
+    } finally {
+      setLoading(false);
     }
   };
-  const signup = async (name, email, password) => {
+  const signup = async (userData) => {
     try {
-      const response = await axios.post('/auth/signup', { name, email, password });
-      const { token, user } = response.data;
+      setLoading(true);
+      const response = await authAPI.register(userData);
+      const { token, user } = response.data.data || response.data;
       
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
@@ -86,38 +61,97 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user };
     } catch (error) {
       console.error('Signup failed:', error);
+      setError(error.response?.data?.message || 'Signup failed');
       return {
         success: false,
         error: error.response?.data?.error || error.response?.data?.message || 'Signup failed'
       };
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = async () => {
     try {
-      await axios.post('/auth/signout');
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       setUser(null);
+      setError(null);
+      
+      // Redirect to home page
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout failed:', error);
     }
   };
 
-  const updateUser = (updatedUser) => {
-    setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+  const forgotPassword = async (email) => {
+    try {
+      setLoading(true);
+      await authAPI.forgotPassword(email);
+      return { success: true, message: 'Password reset email sent' };
+    } catch (error) {
+      console.error('Forgot password failed:', error);
+      setError(error.response?.data?.message || 'Failed to send reset email');
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to send reset email'
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async (token, password) => {
+    try {
+      setLoading(true);
+      await authAPI.resetPassword(token, password);
+      return { success: true, message: 'Password reset successful' };
+    } catch (error) {
+      console.error('Reset password failed:', error);
+      setError(error.response?.data?.message || 'Password reset failed');
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Password reset failed'
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const changePassword = async (oldPassword, newPassword) => {
+    try {
+      setLoading(true);
+      await authAPI.changePassword({ oldPassword, newPassword });
+      return { success: true, message: 'Password changed successfully' };
+    } catch (error) {
+      console.error('Change password failed:', error);
+      setError(error.response?.data?.message || 'Password change failed');
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Password change failed'
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearError = () => {
+    setError(null);
   };
 
   const value = {
     user,
     loading,
+    error,
     login,
     signup,
     logout,
-    updateUser,
-    isAuthenticated: !!user,
+    forgotPassword,
+    resetPassword,
+    changePassword,
+    clearError,
+    isAuthenticated: !!user
   };
 
   return (
@@ -134,3 +168,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export default AuthContext;

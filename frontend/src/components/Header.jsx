@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { cn } from '../lib/utils.js';
@@ -6,13 +6,38 @@ import { Button } from './ui/Button.jsx';
 import Logo from './common/Logo.jsx';
 import ThemeDropdown from './ThemeDropdown.jsx';
 import FeedbackSheet from './common/FeedbackSheet.jsx';
+import { 
+  ChevronDown, 
+  User, 
+  CreditCard, 
+  DollarSign, 
+  MessageSquare, 
+  BarChart3,
+  UserPlus,
+  ShieldCheck,
+  LogOut
+} from 'lucide-react';
 
 const Header = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const menuRef = useRef(null);
   
   const isHomePage = location.pathname === '/';
   const isDashboard = location.pathname.startsWith('/dashboard');
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const navLinks = [
     { id: 'how-it-works', text: 'How it works' },
@@ -20,8 +45,47 @@ const Header = () => {
     { id: 'pricing', text: 'Pricing' }
   ];
 
+  const userMenuItems = [
+    { 
+      icon: User, 
+      label: 'Profile', 
+      href: '/profile' 
+    },
+    { 
+      icon: BarChart3, 
+      label: 'Dashboard', 
+      href: '/dashboard' 
+    },
+    { 
+      icon: DollarSign, 
+      label: 'Expenses', 
+      href: '/expenses' 
+    },
+    { 
+      icon: CreditCard, 
+      label: 'Payments', 
+      href: '/payments' 
+    },
+    { 
+      icon: MessageSquare, 
+      label: 'Feedback', 
+      href: '/feedback' 
+    },
+    { 
+      icon: UserPlus, 
+      label: 'Invites', 
+      href: '/invite' 
+    },
+    ...(user?.role === 'admin' ? [{ 
+      icon: ShieldCheck, 
+      label: 'Admin', 
+      href: '/admin' 
+    }] : [])
+  ];
+
   const handleSignOut = () => {
     logout();
+    setShowUserMenu(false);
   };
 
   return (
@@ -75,8 +139,7 @@ const Header = () => {
                     Sign Up
                   </Button>
                 </Link>
-              </>
-            ) : (
+              </>            ) : (
               <div className="flex items-center gap-4">
                 {!isDashboard && (
                   <Link to="/dashboard">
@@ -90,17 +153,50 @@ const Header = () => {
                     Community Plans
                   </Button>
                 </Link>
-                <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {user?.name || user?.email}
-                </span>
-                <Button
-                  onClick={handleSignOut}
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
-                >
-                  Sign Out
-                </Button>
+                
+                {/* User Menu Dropdown */}
+                <div className="relative" ref={menuRef}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="flex items-center gap-2"
+                  >
+                    <User className="h-4 w-4" />
+                    <span className="hidden sm:block">{user?.name || user?.email}</span>
+                    <ChevronDown className={cn(
+                      "h-4 w-4 transition-transform",
+                      showUserMenu && "rotate-180"
+                    )} />
+                  </Button>
+                  
+                  {showUserMenu && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                      {userMenuItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <Link
+                            key={item.href}
+                            to={item.href}
+                            onClick={() => setShowUserMenu(false)}
+                            className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            <Icon className="h-4 w-4" />
+                            {item.label}
+                          </Link>
+                        );
+                      })}
+                      <hr className="my-1 border-gray-200 dark:border-gray-700" />
+                      <button
+                        onClick={handleSignOut}
+                        className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

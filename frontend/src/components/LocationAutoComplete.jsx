@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MapPin, Loader2 } from 'lucide-react';
-import { useMap } from '../contexts/MapProvider.jsx';
 
 const LocationAutoComplete = ({ onLocationSelect, placeholder = "Enter location...", className = "" }) => {
   const [query, setQuery] = useState('');
@@ -8,31 +7,7 @@ const LocationAutoComplete = ({ onLocationSelect, placeholder = "Enter location.
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef(null);
-  const { isLoaded, geocodeLocation } = useMap();
-
-  // Helper to load Google Maps JS API if not already loaded
-  function loadGoogleMapsScript(apiKey) {
-    if (window.google && window.google.maps && window.google.maps.places) return Promise.resolve();
-    if (document.getElementById('google-maps-script')) return new Promise(resolve => {
-      const check = setInterval(() => {
-        if (window.google && window.google.maps && window.google.maps.places) {
-          clearInterval(check);
-          resolve();
-        }
-      }, 50);
-    });
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.id = 'google-maps-script';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
-      script.async = true;
-      script.onload = resolve;
-      script.onerror = reject;
-      document.body.appendChild(script);
-    });
-  }
-
-  const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;  // Search for locations using backend API
+  // Search for locations using backend API
   const searchLocations = async (searchQuery) => {
     if (!searchQuery.trim()) {
       setSuggestions([]);
@@ -40,22 +15,22 @@ const LocationAutoComplete = ({ onLocationSelect, placeholder = "Enter location.
     }
     setIsLoading(true);
     try {
-      const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${baseUrl}/api/locations/search?q=${encodeURIComponent(searchQuery)}`);
+      const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${baseUrl}/locations/search?q=${encodeURIComponent(searchQuery)}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+        const data = await response.json();
       
-      const data = await response.json();
-      
-      if (data.locations && Array.isArray(data.locations)) {
+      if (data.status === 'success' && data.locations && Array.isArray(data.locations)) {
         const results = data.locations.map(location => ({
           name: location.name,
-          address: `${location.name}, ${location.country}`,
+          address: location.address,
           country: location.country,
           lat: location.lat,
-          lng: location.lng
+          lng: location.lng,
+          place_id: location.place_id
         }));
         setSuggestions(results);
       } else {

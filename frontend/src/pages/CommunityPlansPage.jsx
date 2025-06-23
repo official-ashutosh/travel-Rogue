@@ -5,7 +5,7 @@ import { Card } from '../components/ui/Card.jsx';
 import { Input } from '../components/ui/Input.jsx';
 import { Badge } from '../components/ui/Badge.jsx';
 import ModernPlanCard from '../components/dashboard/ModernPlanCard.jsx';
-import api from '../lib/api.js';
+import { communityAPI } from '../lib/api.js';
 import { cn } from '../lib/utils.js';
 
 // Empty Plans Illustration Component
@@ -99,11 +99,20 @@ const CommunityPlansPage = () => {
   const [offset, setOffset] = useState(0);
   const [searchText, setSearchText] = useState("");
   const [viewMode, setViewMode] = useState('grid');
-  const limit = 12;
-  const fetchPlans = useCallback(async (append = false) => {
+  const limit = 12;  const fetchPlans = useCallback(async (append = false) => {
     setStatus(append ? "CanLoadMore" : "LoadingFirstPage");
     try {
-      const response = await api.get(`/community-plans?offset=${append ? offset : 0}&limit=${limit}`);
+      const currentPage = Math.floor((append ? offset : 0) / limit) + 1;
+      const params = {
+        page: currentPage,
+        limit: limit
+      };
+      
+      if (searchText.trim()) {
+        params.search = searchText.trim();
+      }
+      
+      const response = await communityAPI.getCommunityPlans(params);
       if (response.data && response.data.plans) {
         const plans = response.data.plans;
         if (append) {
@@ -120,7 +129,7 @@ const CommunityPlansPage = () => {
       console.error('Error fetching community plans:', error);
       setStatus("Exhausted");
     }
-  }, [offset, limit]);
+  }, [offset, limit, searchText]);
 
   useEffect(() => {
     fetchPlans(false);

@@ -1,12 +1,23 @@
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-dotenv.config();
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/travel_rogue';
     
-    console.log(`🍃 MongoDB Connected: ${conn.connection.host}`);
+    console.log('\n' + '═'.repeat(55));
+    console.log('🔗 MongoDB Database Connection');
+    console.log('═'.repeat(55));
+    console.log(`📍 URI: ${mongoUri}`);
+    console.log('═'.repeat(55));
+
+    const conn = await mongoose.connect(mongoUri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    
+    console.log('✅ MongoDB connected successfully!');
+    console.log(`🗄️  Database: ${conn.connection.db.databaseName}`);
+    console.log('═'.repeat(55) + '\n');
 
     // Handle connection events
     mongoose.connection.on('error', (err) => {
@@ -24,10 +35,29 @@ const connectDB = async () => {
       process.exit(0);
     });
 
+    return conn;
   } catch (error) {
-    console.error('Error connecting to MongoDB:', error);
+    console.error('❌ MongoDB connection failed:', error);
     process.exit(1);
   }
 };
 
-module.exports = connectDB;
+const getDb = () => {
+  if (mongoose.connection.readyState !== 1) {
+    throw new Error('Database not connected. Call connectDB first.');
+  }
+  return mongoose.connection.db;
+};
+
+const closeConnection = async () => {
+  if (mongoose.connection.readyState === 1) {
+    await mongoose.connection.close();
+    console.log('MongoDB connection closed.');
+  }
+};
+
+module.exports = {
+  connectDB,
+  getDb,
+  closeConnection
+};

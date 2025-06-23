@@ -93,7 +93,11 @@ const LoginPage = () => {
                   'Sign In'
                 )}
               </Button>
-            </form>
+            </form>            <div className="mt-4 text-center">
+              <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                Forgot your password?
+              </Link>
+            </div>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">

@@ -7,7 +7,8 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import LoadingSpinner from '../components/common/LoadingSpinner.jsx';
 
 const SignupPage = () => {
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,14 +26,19 @@ const SignupPage = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long');
       return;
     }
 
     setLoading(true);
 
-    const result = await signup(name, email, password);
+    const result = await signup({
+      firstName,
+      lastName,
+      email,
+      password
+    });
     
     if (result.success) {
       navigate('/dashboard');
@@ -72,21 +78,38 @@ const SignupPage = () => {
                   {error}
                 </div>
               )}
-              
-              <div className="space-y-2">
-                <label htmlFor="name" className="form-label block text-sm font-medium text-gray-700">
-                  Full Name
-                </label>
-                <Input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  placeholder="Enter your full name"
-                  disabled={loading}
-                  className="transition-all focus:scale-105"
-                />
+                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="firstName" className="form-label block text-sm font-medium text-gray-700">
+                    First Name
+                  </label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                    placeholder="First name"
+                    disabled={loading}
+                    className="transition-all focus:scale-105"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label htmlFor="lastName" className="form-label block text-sm font-medium text-gray-700">
+                    Last Name
+                  </label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                    placeholder="Last name"
+                    disabled={loading}
+                    className="transition-all focus:scale-105"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
