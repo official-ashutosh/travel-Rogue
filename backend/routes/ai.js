@@ -13,19 +13,19 @@ const promptSuffix = `generate travel data according to the schema and in json f
 
 // Schemas (converted from TypeScript)
 const batch1Schema = {
-  aboutThePlace: 'string',
-  bestTimeToVisit: 'string'
+  abouttheplace: 'string',
+  besttimetovisit: 'string'
 };
 
 const batch2Schema = {
-  topAdventureActivities: 'array',
-  localCuisineRecommendations: 'array',
-  packingChecklist: 'array'
+  adventuresactivitiestodo: 'array',
+  localcuisinerecommendations: 'array',
+  packingchecklist: 'array'
 };
 
 const batch3Schema = {
   itinerary: 'array',
-  topPlacesToVisit: 'array'
+  topplacestovisit: 'array'
 };
 
 const callGeminiApi = async (prompt, schema, description) => {
@@ -130,6 +130,42 @@ router.post('/generate-itinerary', async (req, res) => {
   } catch (error) {
     console.error('Error generating itinerary:', error);
     res.status(500).json({ error: 'Failed to generate itinerary' });
+  }
+});
+
+// POST: Submit feedback
+router.post('/feedback', async (req, res) => {
+  try {
+    const { planId, label, message } = req.body;
+    
+    if (!message || message.length < 2) {
+      return res.status(400).json({ error: 'Message is required and must be at least 2 characters' });
+    }
+
+    // Here you would typically save to database
+    // For now, just log and return success
+    console.log('Feedback received:', {
+      planId,
+      label,
+      message,
+      userId: req.user?.id,
+      timestamp: new Date().toISOString()
+    });
+
+    res.json({ 
+      success: true, 
+      message: 'Feedback submitted successfully',
+      data: {
+        id: Math.random().toString(36).substr(2, 9),
+        planId,
+        label,
+        message,
+        createdAt: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Error submitting feedback:', error);
+    res.status(500).json({ error: 'Failed to submit feedback' });
   }
 });
 

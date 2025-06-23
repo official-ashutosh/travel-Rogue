@@ -7,19 +7,14 @@ import {
   Users, 
   Wand2, 
   Loader2,
-  MessageSquarePlus,
-  Heart,
-  Camera,
-  Utensils,
-  Mountain,
-  Building,
-  Compass
+  MessageSquarePlus
 } from 'lucide-react';
 import { Button } from './ui/Button.jsx';
 import { Input } from './ui/Input.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import api from '../lib/api.js';
 import LocationAutoComplete from './LocationAutoComplete.jsx';
+import { ACTIVITY_PREFERENCES, COMPANION_PREFERENCES } from '../lib/constants.js';
 
 const NewPlanForm = ({ closeModal }) => {
   const navigate = useNavigate();
@@ -36,23 +31,16 @@ const NewPlanForm = ({ closeModal }) => {
     companion: '',
     activityPreferences: []
   });
+  const activities = ACTIVITY_PREFERENCES.map(activity => ({
+    id: activity.id,
+    label: activity.displayName,
+    icon: activity.icon
+  }));
 
-  const activities = [
-    { id: 'sightseeing', label: 'Sightseeing', icon: Camera },
-    { id: 'adventure', label: 'Adventure', icon: Mountain },
-    { id: 'food', label: 'Food & Dining', icon: Utensils },
-    { id: 'culture', label: 'Culture & History', icon: Building },
-    { id: 'nature', label: 'Nature & Wildlife', icon: Compass },
-    { id: 'relaxation', label: 'Relaxation', icon: Heart }
-  ];
-
-  const companions = [
-    { id: 'solo', label: 'Solo Travel' },
-    { id: 'couple', label: 'Couple' },
-    { id: 'family', label: 'Family' },
-    { id: 'friends', label: 'Friends' },
-    { id: 'business', label: 'Business' }
-  ];
+  const companions = COMPANION_PREFERENCES.map(companion => ({
+    id: companion.id,
+    label: companion.displayName
+  }));
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({

@@ -110,14 +110,25 @@ export function truncate(str, length) {
   return str.length > length ? str.substring(0, length) + '...' : str;
 }
 
-// Utility function to format date ranges
-export const getFormattedDateRange = (fromDate, toDate) => {
+// Format date range for display
+export function getFormattedDateRange(fromDate, toDate) {
   if (!fromDate || !toDate) return '';
   
-  const from = new Date(fromDate);
-  const to = new Date(toDate);
+  const options = { month: 'short', day: 'numeric' };
+  const from = new Intl.DateTimeFormat('en-US', options).format(new Date(fromDate));
+  const to = new Intl.DateTimeFormat('en-US', options).format(new Date(toDate));
   
-  const options = { month: 'short', day: 'numeric', year: 'numeric' };
+  return `${from} - ${to}`;
+}
+
+// Calculate duration between two dates
+export function calculateDuration(fromDate, toDate) {
+  if (!fromDate || !toDate) return 0;
   
-  return `${from.toLocaleDateString('en-US', options)} - ${to.toLocaleDateString('en-US', options)}`;
-};
+  const start = new Date(fromDate);
+  const end = new Date(toDate);
+  const diffTime = Math.abs(end - start);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  return diffDays;
+}

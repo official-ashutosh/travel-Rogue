@@ -1,137 +1,161 @@
-import React, { useState } from 'react';
-import { MessageSquare, Send, CheckCircle } from 'lucide-react';
-import { Button } from '../ui/Button.jsx';
-import axios from 'axios';
+"use client";
+import { Button } from "../ui/Button.jsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select.jsx";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "../ui/sheet.jsx";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form.jsx";
+import { useState } from "react";
+import { MessageCircleCode } from "lucide-react";
+import { FEEDBACK_LABELS } from "../../lib/constants.js";
+import { Textarea } from "../ui/textarea.jsx";
+import { useParams } from "react-router-dom";
+
+const formSchema = z.object({
+  message: z.string().min(2),
+  label: z.union([
+    z.literal("issue"),
+    z.literal("idea"),
+    z.literal("question"),
+    z.literal("complaint"),
+    z.literal("featurerequest"),
+    z.literal("other"),
+  ]),
+});
 
 const FeedbackSheet = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [feedback, setFeedback] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!feedback.trim()) return;
-
-    setIsSubmitting(true);
+  const [open, setOpen] = useState(false);
+  const { planId } = useParams();
+  
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      message: '',
+      label: ''
+    }
+  });
+  const addFeedback = async (feedback) => {
+    const token = localStorage.getItem('token');
+    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    
+    const response = await fetch(`${baseUrl}/api/feedback`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": token ? `Bearer ${token}` : ''
+      },
+      body: JSON.stringify(feedback),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return response.json();
+  };const onSubmit = async (values) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(`${process.env.REACT_APP_API_URL}/feedback`, {
-        message: feedback.trim(),
-        type: 'general'
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const { label, message } = values;
+      
+      await addFeedback({
+        planId: planId ? String(planId) : undefined,
+        label,
+        message,
       });
+        // Show success message
+      alert('✅ Feedback submitted successfully! Thank you for your input.');
       
-      setIsSuccess(true);
-      setFeedback('');
-      
-      // Auto-close after success
-      setTimeout(() => {
-        setIsOpen(false);
-        setIsSuccess(false);
-      }, 2000);
+      form.reset();
+      setOpen(false);
     } catch (error) {
-      console.error('Failed to submit feedback:', error);
-      // If user is not authenticated, still allow feedback submission
-      if (error.response?.status === 401) {
-        console.log('Feedback submitted (not authenticated):', feedback);
-        setIsSuccess(true);
-        setFeedback('');
-        setTimeout(() => {
-          setIsOpen(false);
-          setIsSuccess(false);
-        }, 2000);
-      }
-    } finally {
-      setIsSubmitting(false);
+      console.error('Error submitting feedback:', error);
+      alert('❌ Failed to submit feedback. Please try again.');
+      // Don't reset form on actual error, let user try again
     }
   };
-  return (
-    <>
-      <Button
-        onClick={() => setIsOpen(true)}
-        variant="outline"
-        size="sm"
-        className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-      >
-        <MessageSquare className="w-4 h-4" />
-        <span className="hidden sm:inline">Feedback</span>
-      </Button>
 
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4 border border-gray-200 dark:border-gray-700">
-            {isSuccess ? (
-              <div className="text-center">
-                <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Thank You!
-                </h2>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Your feedback has been submitted successfully.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Share Your Feedback
-                  </h2>
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <form onSubmit={handleSubmit}>
-                  <textarea
-                    value={feedback}
-                    onChange={(e) => setFeedback(e.target.value)}
-                    placeholder="Tell us what you think about your experience..."
-                    className="w-full h-32 p-4 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
-                    required
-                  />
-                  <div className="flex justify-end space-x-3 mt-6">
-                    <Button
-                      type="button"
-                      onClick={() => setIsOpen(false)}
-                      variant="outline"
-                      className="px-4 py-2"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting || !feedback.trim()}
-                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Sending...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-4 h-4" />
-                          <span>Send Feedback</span>
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-    </>
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button size="sm" variant="ghost" title="Give Feedback">
+          <MessageCircleCode className="w-4 h-4" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>We Value Your Feedback!</SheetTitle>
+          <SheetDescription>
+            Please take a moment to share your thoughts and help us improve.
+          </SheetDescription>
+        </SheetHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pt-5">
+            <FormField
+              control={form.control}
+              name="label"
+              render={({field}) => (
+                <FormItem>
+                  <FormLabel>Label</FormLabel>
+                  <FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a Label" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FEEDBACK_LABELS.map((label) => (
+                          <SelectItem value={label.id} key={label.id}>
+                            {label.displayName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="message"
+              render={({field}) => (
+                <FormItem>
+                  <FormLabel>Message</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      cols={10}
+                      placeholder="Tell us more about your feedback"
+                      className="h-full"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button
+              type="submit"
+              variant="outline"
+              className="bg-blue-500 hover:bg-blue-700 text-white hover:text-white"
+            >
+              Submit Feedback
+            </Button>
+          </form>
+        </Form>
+      </SheetContent>
+    </Sheet>
   );
 };
 

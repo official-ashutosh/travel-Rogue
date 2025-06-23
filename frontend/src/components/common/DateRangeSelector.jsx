@@ -1,58 +1,93 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Button } from "../ui/Button.jsx";
+import { Calendar } from "../ui/calendar.jsx";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../ui/popover.jsx";
+import { useIsMobile } from "../../hooks/useMobile.js";
+import { cn, getFormattedDateRange } from "../../lib/utils.js";
+import { CalendarIcon } from "lucide-react";
 
 const DateRangeSelector = ({ 
-  value = { from: null, to: null }, 
+  value,
   onChange, 
-  className = '' 
+  forGeneratePlan,
+  className = '', 
+  isLoading,
 }) => {
-  const formatDate = (date) => {
-    if (!date) return '';
-    return new Date(date).toLocaleDateString();
-  };
-
-  const handleFromChange = (e) => {
-    onChange({
-      ...value,
-      from: e.target.value ? new Date(e.target.value) : null
-    });
-  };
-
-  const handleToChange = (e) => {
-    onChange({
-      ...value,
-      to: e.target.value ? new Date(e.target.value) : null
-    });
+  const [dateRangePopoverOpen, setDateRangePopoverOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const resetControl = () => {
+    onChange({ from: undefined, to: undefined });
   };
 
   return (
-    <div className={`space-y-2 ${className}`}>
-      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Travel Dates</h3>
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">From</label>
-          <input
-            type="date"
-            value={value.from ? value.from.toISOString().split('T')[0] : ''}
-            onChange={handleFromChange}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
-          />
+    <Popover open={dateRangePopoverOpen} onOpenChange={setDateRangePopoverOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          size={forGeneratePlan ? "default" : "sm"}
+          variant={forGeneratePlan ? "outline" : "link"}
+          className={cn(
+            {
+              "pl-3 flex justify-between text-left font-normal": forGeneratePlan,
+              "text-muted-foreground": !value,
+            },
+            className
+          )}
+          disabled={!forGeneratePlan && isLoading}
+        >
+          {forGeneratePlan &&
+            (value && value.from && value.to ? (
+              <span>{getFormattedDateRange(value.from, value.to)}</span>
+            ) : (
+              <span className="text-muted-foreground">Pick Travel Dates</span>
+            ))}
+          <CalendarIcon className={cn("h-4 w-4 text-foreground")} />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-auto p-0 touch-pan-y"
+        align={isMobile ? "center" : "start"}
+        side={isMobile ? "bottom" : undefined}
+        collisionPadding={16}
+      >
+        <Calendar
+          month={value?.from}
+          mode="range"
+          numberOfMonths={isMobile ? 1 : 2}
+          max={10}
+          selected={value}
+          onSelect={(e) => {
+            onChange(e);
+            if (!isMobile && e?.from && e.to) {
+              setDateRangePopoverOpen(false);
+            }
+          }}
+          disabled={(date) => date < new Date("1900-01-01")}
+          initialFocus={!isMobile}
+          classNames={{
+            day: "h-10 w-10 text-sm",
+            cell: "py-1 px-0.5",
+          }}
+        />
+        <div className="w-full flex justify-end pr-5 pb-3 gap-2">
+          <Button
+            onClick={resetControl}
+            variant="ghost"
+            size={isMobile ? "sm" : "default"}
+          >
+            Reset
+          </Button>
+          {isMobile && (
+            <Button onClick={() => setDateRangePopoverOpen(false)} size="sm">
+              Close
+            </Button>
+          )}
         </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">To</label>
-          <input
-            type="date"
-            value={value.to ? value.to.toISOString().split('T')[0] : ''}
-            onChange={handleToChange}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
-          />
-        </div>
-      </div>
-      {value.from && value.to && (
-        <p className="text-xs text-gray-500">
-          {formatDate(value.from)} - {formatDate(value.to)}
-        </p>
-      )}
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 };
 

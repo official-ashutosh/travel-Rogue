@@ -4,26 +4,35 @@ import {
   ArrowLeft, 
   Edit, 
   Share2, 
-  MapPin, 
   Calendar, 
   DollarSign, 
   Eye,
   Clock,
-  Star,
   Plus,
-  Navigation,
-  Sunrise,
-  Sun,
-  Sunset,
-  ChevronRight,
   Wand2,
-  Home,
-  Mountain
+  Home
 } from 'lucide-react';
 import { Button } from '../components/ui/Button.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card.jsx';
 import { Badge } from '../components/ui/Badge.jsx';
 import api from '../lib/api.js';
+import { 
+  planSections, 
+  ACTIVITY_PREFERENCES,
+  COMPANION_PREFERENCES 
+} from '../lib/constants.js';
+
+// Import section components
+import {
+  AboutThePlace,
+  BestTimeToVisit,
+  TopActivities,
+  LocalCuisineRecommendations,
+  PackingChecklist,
+  Weather
+} from '../components/sections/index.js';
+import EnhancedItinerary from '../components/sections/EnhancedItinerary.jsx';
+import EnhancedTopPlacesToVisit from '../components/sections/EnhancedTopPlacesToVisit.jsx';
 
 const PlanDetailPage = () => {
   const { planId } = useParams();
@@ -31,6 +40,8 @@ const PlanDetailPage = () => {
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+
   useEffect(() => {
     const fetchPlan = async () => {
       try {
@@ -39,8 +50,8 @@ const PlanDetailPage = () => {
         setPlan(response.data.plan);
       } catch (error) {
         console.error('Error fetching plan:', error);
-        // If plan not found, redirect to plans page
-        navigate('/plans');
+        // If plan not found, redirect to dashboard 
+        navigate('/dashboard');
       } finally {
         setLoading(false);
       }
@@ -50,6 +61,65 @@ const PlanDetailPage = () => {
       fetchPlan();
     }
   }, [planId, navigate]);
+
+  const generateWithAI = async () => {
+    if (!plan) return;
+    
+    setIsGeneratingAI(true);
+    try {
+      // Generate place info (batch 1)
+      const placeInfoResponse = await api.post('/api/ai/generate-place-info', {
+        promptText: `Generate information about ${plan.nameoftheplace}`
+      });
+
+      // Generate recommendations (batch 2)  
+      const recommendationsResponse = await api.post('/api/ai/generate-recommendations', {
+        userPrompt: `Generate recommendations for ${plan.nameoftheplace}`,
+        fromDate: plan.fromdate,
+        toDate: plan.todate,
+        activityPreferences: [],
+        companion: []
+      });
+
+      // Generate itinerary (batch 3)
+      const itineraryResponse = await api.post('/api/ai/generate-itinerary', {
+        userPrompt: `Generate itinerary for ${plan.nameoftheplace}`,
+        fromDate: plan.fromdate,
+        toDate: plan.todate,
+        activityPreferences: [],
+        companion: []
+      });      // Update plan with AI data
+      const updatedPlan = {
+        ...plan,
+        abouttheplace: placeInfoResponse.data.data.abouttheplace || plan.abouttheplace,
+        best_time_to_visit: placeInfoResponse.data.data.besttimetovisit,
+        top_adventure_activities: recommendationsResponse.data.data.adventuresactivitiestodo,
+        local_cuisine_recommendations: recommendationsResponse.data.data.localcuisinerecommendations,
+        packing_checklist: recommendationsResponse.data.data.packingchecklist,
+        top_places_to_visit: itineraryResponse.data.data.topplacestovisit,
+        itinerary: itineraryResponse.data.data.itinerary
+      };      setPlan(updatedPlan);
+      
+      // Update plan in database
+      try {
+        await api.put(`/api/plans/${planId}`, {
+          best_time_to_visit: updatedPlan.best_time_to_visit,
+          top_adventure_activities: updatedPlan.top_adventure_activities,
+          local_cuisine_recommendations: updatedPlan.local_cuisine_recommendations,
+          packing_checklist: updatedPlan.packing_checklist,
+          top_places_to_visit: updatedPlan.top_places_to_visit
+        });
+        console.log('Plan updated successfully in database');
+      } catch (updateError) {
+        console.error('Error updating plan in database:', updateError);
+      }
+      
+    } catch (error) {
+      console.error('Error generating AI content:', error);
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
 
   const formatDateRange = (fromDate, toDate) => {
     if (!fromDate || !toDate) return 'Dates not set';
@@ -89,63 +159,94 @@ const PlanDetailPage = () => {
     return colors[status] || colors.planning;
   };
 
-  const mockItinerary = [
-    {
-      day: 1,
-      title: 'Arrival Day',
-      activities: {
-        morning: [
-          { name: 'Airport pickup', description: 'Arrive at destination airport' },
-          { name: 'Hotel check-in', description: 'Check into hotel and freshen up' }
-        ],
-        afternoon: [
-          { name: 'City orientation', description: 'Walking tour of the main area' },
-          { name: 'Local lunch', description: 'Try authentic local cuisine' }
-        ],
-        evening: [
-          { name: 'Welcome dinner', description: 'Dinner at a recommended restaurant' },
-          { name: 'Early rest', description: 'Rest to recover from travel' }
-        ]
-      }
-    },
-    {
-      day: 2,
-      title: 'Exploration Day',
-      activities: {
-        morning: [
-          { name: 'Main attractions', description: 'Visit top-rated tourist spots' },
-          { name: 'Guided tour', description: 'Professional guided tour' }
-        ],
-        afternoon: [
-          { name: 'Museum visit', description: 'Explore local history and culture' },
-          { name: 'Shopping', description: 'Browse local markets and shops' }
-        ],
-        evening: [
-          { name: 'Sunset viewing', description: 'Watch sunset from best viewpoint' },
-          { name: 'Cultural show', description: 'Attend local cultural performance' }
-        ]
-      }
+  const renderSectionContent = (sectionId) => {
+    if (!plan) return null;
+
+    switch (sectionId) {
+      case 'abouttheplace':
+        return <AboutThePlace content={plan.abouttheplace} planId={planId} allowEdit={true} />;
+      
+      case 'besttimetovisit':
+        return <BestTimeToVisit content={plan.best_time_to_visit} planId={planId} allowEdit={true} />;
+      
+      case 'adventuresactivitiestodo':
+        return <TopActivities activities={plan.top_adventure_activities || []} planId={planId} allowEdit={true} />;
+        case 'topplacestovisit':
+        return <EnhancedTopPlacesToVisit places={plan.top_places_to_visit || []} planId={planId} allowEdit={true} />;
+        case 'itinerary':
+        return <EnhancedItinerary itinerary={plan.itinerary || []} planId={planId} allowEdit={true} />;
+      
+      case 'localcuisinerecommendations':
+        return <LocalCuisineRecommendations recommendations={plan.local_cuisine_recommendations || []} planId={planId} allowEdit={true} />;
+      
+      case 'packingchecklist':
+        return <PackingChecklist checklist={plan.packing_checklist || []} planId={planId} allowEdit={true} />;
+      
+      case 'weather':
+        return <Weather weatherInfo={plan.weather_info} planId={planId} allowEdit={true} />;
+      
+      case 'imagination':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Trip Vision</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-gray-600">
+                  Share your dreams and expectations for this trip. What makes this journey special to you?
+                </p>
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <p className="text-gray-700 leading-relaxed">
+                    {plan.abouttheplace || 'Add your personal thoughts and dreams about this trip...'}
+                  </p>
+                </div>
+                {/* Activity Preferences */}
+                <div className="space-y-3">
+                  <h4 className="font-medium">Activity Preferences</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {ACTIVITY_PREFERENCES.map((activity) => {
+                      const Icon = activity.icon;
+                      return (
+                        <div key={activity.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                          <Icon className="w-4 h-4 text-blue-600" />
+                          <span className="text-sm">{activity.displayName}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                {/* Companion Preferences */}
+                <div className="space-y-3">
+                  <h4 className="font-medium">Travel Companions</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {COMPANION_PREFERENCES.map((companion) => {
+                      const Icon = companion.icon;
+                      return (
+                        <div key={companion.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                          <Icon className="w-4 h-4 text-green-600" />
+                          <span className="text-sm">{companion.displayName}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      
+      default:
+        return (
+          <Card>
+            <CardContent className="text-center py-8 text-gray-500">
+              <p>No content available for this section yet.</p>
+              <p className="text-sm mt-2">Try generating content with AI!</p>
+            </CardContent>
+          </Card>
+        );
     }
-  ];
-
-  const mockActivities = [
-    'City walking tour',
-    'Local food tasting',
-    'Museum visits',
-    'Photography sessions',
-    'Shopping at local markets',
-    'Cultural experiences',
-    'Adventure activities',
-    'Relaxation time'
-  ];
-
-  const mockPlaces = [
-    { name: 'Historic Old Town', coordinates: [0, 0] },
-    { name: 'Central Museum', coordinates: [0, 0] },
-    { name: 'Local Market Square', coordinates: [0, 0] },
-    { name: 'Scenic Viewpoint', coordinates: [0, 0] },
-    { name: 'Cultural Center', coordinates: [0, 0] }
-  ];
+  };
 
   if (loading) {
     return (
@@ -167,7 +268,7 @@ const PlanDetailPage = () => {
           <div className="text-center space-y-4">
             <h1 className="text-2xl font-bold text-gray-900">Plan Not Found</h1>
             <p className="text-gray-600">The plan you're looking for doesn't exist.</p>
-            <Button onClick={() => navigate('/plans')}>
+            <Button onClick={() => navigate('/dashboard')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Plans
             </Button>
@@ -193,7 +294,7 @@ const PlanDetailPage = () => {
         
         {/* Header Controls */}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
-          <Button variant="secondary" onClick={() => navigate('/plans')}>
+          <Button variant="secondary" onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
@@ -260,9 +361,11 @@ const PlanDetailPage = () => {
           <div className="flex gap-8 overflow-x-auto">
             {[
               { id: 'overview', label: 'Overview', icon: Home },
-              { id: 'itinerary', label: 'Itinerary', icon: Navigation },
-              { id: 'activities', label: 'Activities', icon: Mountain },
-              { id: 'places', label: 'Places', icon: MapPin },
+              ...planSections.map(section => ({
+                id: section.id,
+                label: section.name,
+                icon: () => section.icon
+              })),
               { id: 'expenses', label: 'Expenses', icon: DollarSign }
             ].map((tab) => {
               const Icon = tab.icon;
@@ -315,11 +418,11 @@ const PlanDetailPage = () => {
                       <div className="text-sm text-gray-600">Days</div>
                     </div>
                     <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">{mockPlaces.length}</div>
+                      <div className="text-2xl font-bold text-green-600">{plan.top_places_to_visit?.length || 0}</div>
                       <div className="text-sm text-gray-600">Places</div>
                     </div>
                     <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-600">{mockActivities.length}</div>
+                      <div className="text-2xl font-bold text-purple-600">{plan.top_adventure_activities?.length || 0}</div>
                       <div className="text-sm text-gray-600">Activities</div>
                     </div>
                     <div className="text-center p-4 bg-orange-50 rounded-lg">
@@ -347,9 +450,14 @@ const PlanDetailPage = () => {
                     <Share2 className="w-4 h-4 mr-2" />
                     Share Plan
                   </Button>
-                  <Button className="w-full" variant="outline">
+                  <Button 
+                    className="w-full" 
+                    variant="outline" 
+                    onClick={generateWithAI}
+                    disabled={isGeneratingAI}
+                  >
                     <Wand2 className="w-4 h-4 mr-2" />
-                    Generate with AI
+                    {isGeneratingAI ? 'Generating...' : 'Generate with AI'}
                   </Button>
                 </CardContent>
               </Card>
@@ -388,187 +496,50 @@ const PlanDetailPage = () => {
           </div>
         )}
 
-        {activeTab === 'itinerary' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Day-by-Day Itinerary</h2>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Day
-              </Button>
+        {/* Dynamic Plan Sections */}
+        {planSections.map((section) => (
+          activeTab === section.id && (
+            <div key={section.id} className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  {section.icon}
+                  {section.name}
+                </h2>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Content
+                </Button>
+              </div>
+              
+              {/* Render section content using proper components */}
+              {renderSectionContent(section.id)}
             </div>
+          )
+        ))}
 
-            {mockItinerary.map((day) => (
-              <Card key={day.day}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-blue-600" />
-                    Day {day.day}: {day.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {/* Morning */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 font-medium text-blue-600">
-                        <Sunrise className="w-4 h-4" />
-                        Morning
-                      </div>
-                      <div className="grid gap-3 ml-6">
-                        {day.activities.morning.map((activity, idx) => (
-                          <div key={idx} className="p-3 bg-blue-50 rounded-lg">
-                            <h4 className="font-medium">{activity.name}</h4>
-                            <p className="text-sm text-gray-600">{activity.description}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Afternoon */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 font-medium text-yellow-600">
-                        <Sun className="w-4 h-4" />
-                        Afternoon
-                      </div>
-                      <div className="grid gap-3 ml-6">
-                        {day.activities.afternoon.map((activity, idx) => (
-                          <div key={idx} className="p-3 bg-yellow-50 rounded-lg">
-                            <h4 className="font-medium">{activity.name}</h4>
-                            <p className="text-sm text-gray-600">{activity.description}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Evening */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 font-medium text-purple-600">
-                        <Sunset className="w-4 h-4" />
-                        Evening
-                      </div>
-                      <div className="grid gap-3 ml-6">
-                        {day.activities.evening.map((activity, idx) => (
-                          <div key={idx} className="p-3 bg-purple-50 rounded-lg">
-                            <h4 className="font-medium">{activity.name}</h4>
-                            <p className="text-sm text-gray-600">{activity.description}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {activeTab === 'activities' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Activities & Experiences</h2>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Activity
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {mockActivities.map((activity, idx) => (
-                <Card key={idx} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Star className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">{activity}</h3>
-                        <p className="text-sm text-gray-600">Recommended activity</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'places' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Places to Visit</h2>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Place
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {mockPlaces.map((place, idx) => (
-                <Card key={idx} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                          <MapPin className="w-5 h-5 text-green-600" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium">{place.name}</h3>
-                          <p className="text-sm text-gray-600">Must-visit location</p>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
+        {/* Expenses Section */}
         {activeTab === 'expenses' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Expense Tracking</h2>
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <DollarSign className="w-6 h-6" />
+                Expenses
+              </h2>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Expense
               </Button>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    ${plan.budget ? plan.budget.toLocaleString() : '0'}
-                  </div>
-                  <div className="text-sm text-gray-600">Total Budget</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="text-2xl font-bold text-blue-600">$0</div>
-                  <div className="text-sm text-gray-600">Spent</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="text-2xl font-bold text-purple-600">
-                    ${plan.budget ? plan.budget.toLocaleString() : '0'}
-                  </div>
-                  <div className="text-sm text-gray-600">Remaining</div>
-                </CardContent>
-              </Card>
-            </div>
-
+            
             <Card>
               <CardHeader>
-                <CardTitle>Recent Expenses</CardTitle>
+                <CardTitle>Expense Tracker</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8 text-gray-500">
                   <DollarSign className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>No expenses recorded yet</p>
-                  <p className="text-sm">Start tracking your travel expenses</p>
+                  <p>No expenses recorded yet.</p>
+                  <p className="text-sm">Add your first expense to get started!</p>
                 </div>
               </CardContent>
             </Card>

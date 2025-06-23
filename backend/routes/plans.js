@@ -60,10 +60,14 @@ router.post('/', [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ 
+        success: false, 
+        message: errors.array()[0].msg,
+        errors: errors.array() 
+      });
     }
 
-    const { nameoftheplace, abouttheplace, fromdate, todate, budget } = req.body;
+    const { nameoftheplace, abouttheplace, fromdate, todate, budget, generateWithAI, activityPreferences, companion } = req.body;
     const userId = req.user.id;
 
     const result = await db.query(
@@ -72,10 +76,26 @@ router.post('/', [
       [userId, nameoftheplace, abouttheplace || '', fromdate, todate, budget]
     );
 
-    res.status(201).json({ plan: result.rows[0] });
+    const plan = result.rows[0];
+
+    // If AI generation is requested, you can add AI logic here
+    if (generateWithAI) {
+      console.log('AI generation requested for plan:', plan.id);
+      // TODO: Implement AI generation logic
+    }
+
+    res.status(201).json({ 
+      success: true,
+      message: 'Plan created successfully',
+      plan: plan 
+    });
   } catch (error) {
     console.error('Error creating plan:', error);
-    res.status(500).json({ error: 'Failed to create plan' });
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to create plan',
+      error: error.message 
+    });
   }
 });
 
@@ -93,7 +113,20 @@ router.put('/:planId', [
     }
 
     const { planId } = req.params;
-    const { nameoftheplace, abouttheplace, fromdate, todate, budget, is_published } = req.body;
+    const { 
+      nameoftheplace, 
+      abouttheplace, 
+      fromdate, 
+      todate, 
+      budget, 
+      is_published,
+      best_time_to_visit,
+      top_adventure_activities,
+      local_cuisine_recommendations,
+      packing_checklist,
+      top_places_to_visit,
+      weather_info
+    } = req.body;
     const userId = req.user.id;
 
     // Check if plan exists and belongs to user
@@ -134,6 +167,32 @@ router.put('/:planId', [
     if (is_published !== undefined) {
       updates.push(`is_published = $${paramIndex++}`);
       values.push(is_published);
+    }
+    
+    // AI-generated content fields
+    if (best_time_to_visit !== undefined) {
+      updates.push(`best_time_to_visit = $${paramIndex++}`);
+      values.push(best_time_to_visit);
+    }
+    if (top_adventure_activities !== undefined) {
+      updates.push(`top_adventure_activities = $${paramIndex++}`);
+      values.push(JSON.stringify(top_adventure_activities));
+    }
+    if (local_cuisine_recommendations !== undefined) {
+      updates.push(`local_cuisine_recommendations = $${paramIndex++}`);
+      values.push(JSON.stringify(local_cuisine_recommendations));
+    }
+    if (packing_checklist !== undefined) {
+      updates.push(`packing_checklist = $${paramIndex++}`);
+      values.push(JSON.stringify(packing_checklist));
+    }
+    if (top_places_to_visit !== undefined) {
+      updates.push(`top_places_to_visit = $${paramIndex++}`);
+      values.push(JSON.stringify(top_places_to_visit));
+    }
+    if (weather_info !== undefined) {
+      updates.push(`weather_info = $${paramIndex++}`);
+      values.push(JSON.stringify(weather_info));
     }
 
     updates.push(`updated_at = CURRENT_TIMESTAMP`);

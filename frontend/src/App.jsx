@@ -8,12 +8,13 @@ import LoginPage from './pages/LoginPage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
-import PlansPage from './pages/PlansPage.jsx';
 import PlanDetailPage from './pages/PlanDetailPage.jsx';
 import NewPlanPage from './pages/NewPlanPage.jsx';
 import CommunityPlansPage from './pages/CommunityPlansPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import LoadingSpinner from './components/common/LoadingSpinner.jsx';
+import ComponentDemo from './components/demo/ComponentDemo.jsx';
+import IntegrationTest from './components/demo/IntegrationTest.jsx';
 
 function App() {
   const { user, loading } = useAuth();
@@ -29,10 +30,11 @@ function App() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Routes>
-        {/* Public routes */}
+      <Routes>        {/* Public routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/community-plans" element={<CommunityPlansPage />} />
+        <Route path="/demo" element={<ComponentDemo />} />
+        <Route path="/test" element={<IntegrationTest />} />
         
         {/* Auth routes */}
         <Route 
@@ -43,15 +45,14 @@ function App() {
           path="/signup" 
           element={user ? <Navigate to="/dashboard" replace /> : <SignupPage />} 
         />
-        
-        {/* Protected routes */}
+          {/* Protected routes */}
         <Route 
           path="/dashboard" 
           element={user ? <DashboardPage /> : <Navigate to="/login" replace />} 
         />
         <Route 
           path="/plans" 
-          element={user ? <PlansPage /> : <Navigate to="/login" replace />} 
+          element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} 
         />
         <Route 
           path="/plans/new" 

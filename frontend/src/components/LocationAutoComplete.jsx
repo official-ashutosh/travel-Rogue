@@ -32,9 +32,7 @@ const LocationAutoComplete = ({ onLocationSelect, placeholder = "Enter location.
     });
   }
 
-  const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
-
-  // Search for locations using Google Places AutocompleteService
+  const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;  // Search for locations using backend API
   const searchLocations = async (searchQuery) => {
     if (!searchQuery.trim()) {
       setSuggestions([]);
@@ -42,25 +40,32 @@ const LocationAutoComplete = ({ onLocationSelect, placeholder = "Enter location.
     }
     setIsLoading(true);
     try {
-      await loadGoogleMapsScript(GOOGLE_MAPS_API_KEY);
-      const service = new window.google.maps.places.AutocompleteService();
-      service.getPlacePredictions({ input: searchQuery, types: ['(cities)'] }, (predictions, status) => {
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-          const results = predictions.map(pred => ({
-            name: pred.structured_formatting.main_text,
-            address: pred.description,
-            type: pred.types?.[0] || 'place',
-            place_id: pred.place_id
-          }));
-          setSuggestions(results.slice(0, 5));
-        } else {
-          setSuggestions([]);
-        }
-        setIsLoading(false);
-      });
+      const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${baseUrl}/api/locations/search?q=${encodeURIComponent(searchQuery)}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.locations && Array.isArray(data.locations)) {
+        const results = data.locations.map(location => ({
+          name: location.name,
+          address: `${location.name}, ${location.country}`,
+          country: location.country,
+          lat: location.lat,
+          lng: location.lng
+        }));
+        setSuggestions(results);
+      } else {
+        setSuggestions([]);
+      }
     } catch (error) {
-      setIsLoading(false);
+      console.error('Location search error:', error);
       setSuggestions([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 

@@ -18,6 +18,7 @@ const userRoutes = require('./routes/users');
 const aiRoutes = require('./routes/ai');
 const configRoutes = require('./routes/config');
 const feedbackRoutes = require('./routes/feedback');
+const locationRoutes = require('./routes/locations');
 
 // Import database connection
 const db = require('./config/database');
@@ -30,7 +31,7 @@ app.use(helmet());
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 10000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.'
 });
@@ -46,8 +47,76 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Logging middleware
-app.use(morgan('combined'));
+// Logging middleware with custom format
+const customMorganFormat = (tokens, req, res) => {
+  const status = tokens.status(req, res);
+  const method = tokens.method(req, res);
+  const url = tokens.url(req, res);
+  const responseTime = tokens['response-time'](req, res);
+  const contentLength = tokens.res(req, res, 'content-length') || '-';
+  const userAgent = tokens['user-agent'](req, res);
+  const referer = tokens.referrer(req, res) || '-';
+  
+  const date = new Date().toLocaleString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+
+  // Color codes for different status codes
+  const getStatusColor = (status) => {
+    const code = parseInt(status);
+    if (code >= 200 && code < 300) return '\x1b[32m'; // Green for success
+    if (code >= 300 && code < 400) return '\x1b[33m'; // Yellow for redirect
+    if (code >= 400 && code < 500) return '\x1b[31m'; // Red for client error
+    if (code >= 500) return '\x1b[35m'; // Magenta for server error
+    return '\x1b[0m'; // Reset
+  };
+
+  const getMethodColor = (method) => {
+    switch (method) {
+      case 'GET': return '\x1b[36m'; // Cyan
+      case 'POST': return '\x1b[32m'; // Green
+      case 'PUT': return '\x1b[33m'; // Yellow
+      case 'DELETE': return '\x1b[31m'; // Red
+      case 'PATCH': return '\x1b[35m'; // Magenta
+      default: return '\x1b[0m'; // Reset
+    }
+  };
+
+  const statusColor = getStatusColor(status);
+  const methodColor = getMethodColor(method);
+  const reset = '\x1b[0m';
+
+  // Get browser name from user agent
+  const getBrowser = (userAgent) => {
+    if (!userAgent) return 'Unknown';
+    if (userAgent.includes('Chrome')) return 'Chrome';
+    if (userAgent.includes('Firefox')) return 'Firefox';
+    if (userAgent.includes('Safari')) return 'Safari';
+    if (userAgent.includes('Edge')) return 'Edge';
+    return 'Other';
+  };
+
+  const browser = getBrowser(userAgent);
+
+  return [
+    `🕐 ${date}`,
+    `${methodColor}${method.padEnd(6)}${reset}`,
+    `${statusColor}${status}${reset}`,
+    `📄 ${contentLength.toString().padStart(6)} bytes`,
+    `⚡ ${responseTime}ms`,
+    `🌐 ${url}`,
+    `🔗 ${referer !== '-' ? referer.replace('http://localhost:3000', 'localhost') : 'direct'}`,
+    `🖥️  ${browser}`
+  ].join(' │ ');
+};
+
+app.use(morgan(customMorganFormat));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -59,6 +128,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/locations', locationRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -88,9 +158,21 @@ app.use((err, req, res, next) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-  console.log(`📡 API available at http://localhost:${PORT}/api`);
+  console.log('\n' + '='.repeat(60));
+  console.log('🚀 Travel Rogue API Server Started Successfully!');
+  console.log('='.repeat(60));
+  console.log(`📡 Server URL: http://localhost:${PORT}`);
+  console.log(`� API Base: http://localhost:${PORT}/api`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`⏰ Started at: ${new Date().toLocaleString()}`);
+  console.log('='.repeat(60));
+  console.log('📋 Available endpoints:');
+  console.log('   • GET  /api/health - Health check');
+  console.log('   • POST /api/auth/* - Authentication');
+  console.log('   • GET  /api/plans/* - Travel plans');
+  console.log('   • POST /api/ai/* - AI generation');
+  console.log('   • GET  /api/weather/* - Weather data');
+  console.log('='.repeat(60) + '\n');
 });
 
 module.exports = app;

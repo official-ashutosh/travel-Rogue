@@ -3,14 +3,40 @@ const router = express.Router();
 const auth = require('../middleware/auth.js');
 
 // Submit feedback
-router.post('/', auth, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    const { message, type = 'general', rating } = req.body;
-    const userId = req.user.id;
+    const { message, label, planId } = req.body;
+    
+    // Get user info if authenticated, otherwise allow anonymous feedback
+    let userId = null;
+    let userEmail = null;
+    
+    // Check if user is authenticated
+    if (req.headers.authorization) {
+      try {
+        const auth = require('../middleware/auth.js');
+        const authCheck = new Promise((resolve, reject) => {
+          auth(req, res, (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        await authCheck;
+        userId = req.user?.id;
+        userEmail = req.user?.email;
+      } catch (error) {
+        // Continue without authentication - allow anonymous feedback
+        console.log('Anonymous feedback submission');
+      }
+    }
 
     // Validate input
     if (!message || message.trim().length === 0) {
       return res.status(400).json({ error: 'Feedback message is required' });
+    }
+
+    if (!label) {
+      return res.status(400).json({ error: 'Feedback label is required' });
     }
 
     if (message.length > 1000) {
@@ -19,11 +45,11 @@ router.post('/', auth, async (req, res) => {
 
     // For now, just log the feedback (in production, save to database)
     const feedback = {
-      userId,
-      userEmail: req.user.email,
+      userId: userId || 'anonymous',
+      userEmail: userEmail || 'anonymous',
+      planId: planId || null,
       message: message.trim(),
-      type,
-      rating,
+      label,
       timestamp: new Date().toISOString(),
       ip: req.ip,
       userAgent: req.get('User-Agent')
@@ -32,17 +58,21 @@ router.post('/', auth, async (req, res) => {
     console.log('📝 New feedback received:', feedback);
 
     // TODO: In production, save feedback to database
-    // await db.query('INSERT INTO feedback (user_id, message, type, rating, created_at) VALUES ($1, $2, $3, $4, NOW())', 
-    //   [userId, message, type, rating]);
+    // await db.query('INSERT INTO feedback (user_id, plan_id, message, label, created_at) VALUES ($1, $2, $3, $4, NOW())', 
+    //   [userId, planId, message, label]);
 
     res.status(201).json({ 
+      success: true,
       message: 'Feedback submitted successfully',
       id: Date.now() // mock ID
     });
 
   } catch (error) {
     console.error('Error submitting feedback:', error);
-    res.status(500).json({ error: 'Failed to submit feedback' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to submit feedback' 
+    });
   }
 });
 

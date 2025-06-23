@@ -6,4 +6,10 @@ const useMobile = () => {
   return isMobile;
 };
 
+// Hook to detect mobile devices (alias for compatibility)
+export const useIsMobile = () => {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  return isMobile;
+};
+
 export default useMobile;
