@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Grid, List, Users, MapPin, TrendingUp } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Grid, List, Users, TrendingUp } from 'lucide-react';
 import { Button } from '../components/ui/Button.jsx';
 import { Card } from '../components/ui/Card.jsx';
 import { Input } from '../components/ui/Input.jsx';
 import { Badge } from '../components/ui/Badge.jsx';
-import PlanCard from '../components/dashboard/PlanCard.jsx';
-import LoadingSpinner from '../components/common/LoadingSpinner.jsx';
+import ModernPlanCard from '../components/dashboard/ModernPlanCard.jsx';
 import api from '../lib/api.js';
 import { cn } from '../lib/utils.js';
 
@@ -101,8 +100,7 @@ const CommunityPlansPage = () => {
   const [searchText, setSearchText] = useState("");
   const [viewMode, setViewMode] = useState('grid');
   const limit = 12;
-
-  const fetchPlans = async (append = false) => {
+  const fetchPlans = useCallback(async (append = false) => {
     setStatus(append ? "CanLoadMore" : "LoadingFirstPage");
     try {
       const response = await api.get(`/community-plans?offset=${append ? offset : 0}&limit=${limit}`);
@@ -122,11 +120,11 @@ const CommunityPlansPage = () => {
       console.error('Error fetching community plans:', error);
       setStatus("Exhausted");
     }
-  };
+  }, [offset, limit]);
 
   useEffect(() => {
     fetchPlans(false);
-  }, []);
+  }, [fetchPlans]);
 
   useEffect(() => {
     if (!searchText) {
@@ -223,9 +221,8 @@ const CommunityPlansPage = () => {
               viewMode === 'grid'
                 ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6"
                 : "space-y-4"
-            }>
-              {filteredResults.map((plan) => (
-                <PlanCard 
+            }>              {filteredResults.map((plan) => (
+                <ModernPlanCard 
                   key={plan.id || plan._id} 
                   plan={plan} 
                   isPublic={true}

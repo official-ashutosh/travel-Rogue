@@ -6,25 +6,17 @@ import {
   List, 
   TrendingUp,
   MapPin,
-  Users,
-  Plus,
-  Calendar,
-  Clock,
-  Star,
-  DollarSign
+  Users
 } from 'lucide-react';
 import { Button } from '../components/ui/Button.jsx';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card.jsx';
 import { Input } from '../components/ui/Input.jsx';
 import { Badge } from '../components/ui/Badge.jsx';
-import { useAuth } from '../contexts/AuthContext.jsx';
-import PlanCard from '../components/dashboard/PlanCard.jsx';
-import NoPlans from '../components/dashboard/NoPlans.jsx';
+import ModernPlanCard from '../components/dashboard/ModernPlanCard.jsx';
+import ModernNoPlans from '../components/dashboard/ModernNoPlans.jsx';
 import GeneratePlanButton from '../components/GeneratePlanButton.jsx';
 import api from '../lib/api.js';
 
 const DashboardPage = () => {
-  const { user } = useAuth();
   const [searchPlanText, setSearchPlanText] = useState("");
   const [plans, setPlans] = useState([]);
   const [communityPlans, setCommunityPlans] = useState([]);
@@ -101,65 +93,50 @@ const DashboardPage = () => {
     const filteredResults = plans.filter((plan) => {
       return plan.nameoftheplace.toLowerCase().includes(value.toLowerCase()) ||
              plan.abouttheplace?.toLowerCase().includes(value.toLowerCase());
-    });
-    setFilteredPlans(filteredResults);
+    });    setFilteredPlans(filteredResults);
   };
 
-  const getTotalBudget = () => {
-    return plans.reduce((total, plan) => total + (plan.budget || 0), 0);
-  };
-
-  const getActivePlans = () => {
-    return plans.filter(plan => {
-      const endDate = new Date(plan.todate || plan.enddate);
-      return endDate >= new Date();
-    }).length;
-  };
-
-  const getTotalDestinations = () => {
-    const destinations = new Set(plans.map(plan => plan.nameoftheplace));
-    return destinations.size;
-  };  return (
-    <main className="flex min-h-[calc(100svh-4rem)] flex-col items-center bg-blue-50/40 dark:bg-gray-900 transition-colors">
-      <div className="w-full lg:px-20 px-5 py-6">
-        {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex flex-col lg:flex-row justify-between gap-4 items-start lg:items-center">            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent mb-2">
+  return (
+    <section className="bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 w-full min-h-screen flex-1 flex flex-col transition-all duration-300">
+      {/* Header */}
+      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
+        <div className="flex flex-col lg:flex-row justify-between gap-4 items-start lg:items-center lg:px-20 px-6 py-6">
+          {/* Title and Stats */}
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
                 Your Travel Dashboard
               </h1>
-              <p className="text-slate-600 dark:text-slate-400">
-                Plan your next adventure and manage your trips
-              </p>
+              {!loading && (
+                <Badge variant="outline" className="animate-pulse-slow">
+                  {plans.length} Plans
+                </Badge>
+              )}
             </div>
-            
-            <div className="flex items-center gap-4">
-              <GeneratePlanButton />
-              <Link to="/plans/new">
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Plan
-                </Button>
-              </Link>
-            </div>
+            <p className="text-slate-600 dark:text-slate-400 text-sm lg:text-base">
+              Manage your travel plans and discover new adventures
+            </p>
           </div>
 
           {/* Search and Controls */}
-          <div className="mt-6 flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1 max-w-md">
+          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+            <div className="relative flex-1 lg:w-80">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
+                id="searchPlan"
+                name="searchPlan"
                 onChange={handleSearch}
                 value={searchPlanText}
-                placeholder="Search plans, destinations..."
+                placeholder="Search plans, tags, or destinations..."
                 type="search"
-                className="pl-10 bg-white border-slate-200"
+                className="pl-10 bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-800 transition-all duration-200"
                 disabled={loading || !plans.length}
               />
             </div>
             
             <div className="flex gap-2">
-              <div className="flex border border-slate-200 rounded-lg overflow-hidden">
+              {/* View Toggle */}
+              <div className="flex border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800">
                 <Button
                   variant={viewMode === 'grid' ? 'default' : 'ghost'}
                   size="sm"
@@ -178,85 +155,41 @@ const DashboardPage = () => {
                 </Button>
               </div>
 
+              {/* Sort Dropdown */}
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="recent">Most Recent</option>
                 <option value="alphabetical">A-Z</option>
                 <option value="budget">Budget</option>
                 <option value="rating">Rating</option>
               </select>
+
+              <GeneratePlanButton />
             </div>
           </div>
         </div>
+      </div>
 
-        {loading ? (
+      {/* Main Content */}
+      <div className="flex-1 px-6 lg:px-20 py-8">        {loading ? (
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="text-slate-600">Loading your travel plans...</p>
+              <p className="text-slate-600 dark:text-slate-400">Loading your travel plans...</p>
             </div>
           </div>
         ) : (
-          <div className="space-y-8">
-            {/* Stats Cards */}
-            {plans.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Plans</CardTitle>
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{plans.length}</div>
-                    <p className="text-xs text-muted-foreground">Plans created</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active Trips</CardTitle>
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{getActivePlans()}</div>
-                    <p className="text-xs text-muted-foreground">Upcoming trips</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Budget</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">${getTotalBudget().toLocaleString()}</div>
-                    <p className="text-xs text-muted-foreground">Planned expenses</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Destinations</CardTitle>
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{getTotalDestinations()}</div>
-                    <p className="text-xs text-muted-foreground">Cities planned</p>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
+          <div className="space-y-12">
             {/* User's Personal Plans */}
             {finalPlans && finalPlans.length > 0 && (
-              <div className="space-y-6">
+              <div className="space-y-6 animate-fade-in-up">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <MapPin className="h-6 w-6 text-blue-600" />
-                    <h2 className="text-xl font-semibold text-slate-800">
+                    <MapPin className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    <h2 className="text-xl lg:text-2xl font-semibold text-slate-800 dark:text-slate-200">
                       Your Travel Plans
                     </h2>
                   </div>
@@ -272,12 +205,16 @@ const DashboardPage = () => {
                     ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6"
                     : "space-y-4"
                 }>
-                  {finalPlans.map((plan) => (
-                    <PlanCard 
-                      key={plan.id}
-                      plan={plan} 
-                      viewMode={viewMode}
-                    />
+                  {finalPlans.map((plan, index) => (
+                    <div
+                      key={plan.id || plan._id}
+                      className="animate-fade-in-up"
+                      style={{ animationDelay: `${index * 100}ms` }}
+                    >                      <ModernPlanCard 
+                        plan={{ ...plan, _id: plan.id || plan._id || '' }} 
+                        viewMode={viewMode}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
@@ -285,18 +222,20 @@ const DashboardPage = () => {
 
             {/* Community Plans Section */}
             {shouldShowCommunityPlans && communityPlans.length > 0 && (
-              <div className="space-y-6">
+              <div className="space-y-6 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
                 <div className="flex items-center gap-3">
-                  <TrendingUp className="h-6 w-6 text-emerald-600" />
-                  <h2 className="text-xl font-semibold text-slate-800">
-                    Community Inspiration
-                  </h2>
-                  <Badge variant="secondary" className="text-xs">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                    <h2 className="text-xl lg:text-2xl font-semibold text-slate-800 dark:text-slate-200">
+                      Community Inspiration
+                    </h2>
+                  </div>
+                  <Badge variant="secondary" className="text-xs animate-pulse-slow">
                     Popular
                   </Badge>
                 </div>
                 
-                <p className="text-slate-600 text-sm">
+                <p className="text-slate-600 dark:text-slate-400 text-sm">
                   Discover amazing travel plans created by our community
                 </p>
 
@@ -305,20 +244,24 @@ const DashboardPage = () => {
                     ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                     : "space-y-4"
                 }>
-                  {communityPlans.slice(0, 6).map((plan) => (
-                    <PlanCard 
-                      key={plan.id}
-                      plan={plan} 
-                      isPublic={true} 
-                      viewMode={viewMode}
-                    />
+                  {communityPlans.slice(0, 6).map((plan, index) => (
+                    <div
+                      key={plan.id || plan._id}
+                      className="animate-fade-in-up"
+                      style={{ animationDelay: `${(index + 3) * 100}ms` }}
+                    >                      <ModernPlanCard 
+                        plan={{ ...plan, _id: plan.id || plan._id || '' }} 
+                        isPublic={true} 
+                        viewMode={viewMode}
+                      />
+                    </div>
                   ))}
                 </div>
 
                 <div className="text-center pt-4">
-                  <Button variant="outline" asChild>
+                  <Button variant="outline" asChild className="group">
                     <Link to="/community-plans" className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
+                      <Users className="h-4 w-4 group-hover:animate-bounce" />
                       Explore All Community Plans
                     </Link>
                   </Button>
@@ -328,18 +271,20 @@ const DashboardPage = () => {
 
             {/* Empty State */}
             {!finalPlans.length && !communityPlans.length && (
-              <NoPlans isLoading={false} />
+              <div className="animate-fade-in-up">
+                <ModernNoPlans isLoading={false} />
+              </div>
             )}
 
             {/* Search No Results */}
             {searchPlanText && finalPlans.length === 0 && plans.length > 0 && (
-              <div className="text-center py-12">
+              <div className="text-center py-12 animate-fade-in-up">
                 <div className="max-w-md mx-auto space-y-4">
                   <div className="text-6xl mb-4">🔍</div>
-                  <h3 className="text-xl font-semibold text-slate-800">
+                  <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200">
                     No plans found
                   </h3>
-                  <p className="text-slate-600">
+                  <p className="text-slate-600 dark:text-slate-400">
                     Try adjusting your search terms or create a new plan
                   </p>
                   <Button 
@@ -355,7 +300,7 @@ const DashboardPage = () => {
           </div>
         )}
       </div>
-    </main>
+    </section>
   );
 };
 
