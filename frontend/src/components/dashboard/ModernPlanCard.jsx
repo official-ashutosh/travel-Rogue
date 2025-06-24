@@ -35,12 +35,12 @@ const ModernPlanCard = ({ plan, isPublic = false, viewMode = 'grid' }) => {
     plan.fromdate || plan.fromDate || plan.startdate, 
     plan.todate || plan.toDate || plan.enddate
   );
-  
-  const linkTo = isPublic ? `/plans/${plan.id || plan._id}/community-plan` : `/plans/${plan.id || plan._id}/plan`;
+    const linkTo = isPublic ? `/plans/${plan.id || plan._id}/community-plan` : `/plans/${plan.id || plan._id}/plan`;
+  const navigationState = { plan }; // Pass plan data through router state
 
   if (viewMode === 'list') {
     return (
-      <Link to={linkTo} className="group block">
+      <Link to={linkTo} state={navigationState} className="group block">
         <Card className="overflow-hidden border-0 shadow-sm hover:shadow-md transition-all duration-200 group-hover:scale-[1.01] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
           <div className="flex gap-4 p-4">
             {/* Image */}
@@ -123,9 +123,8 @@ const ModernPlanCard = ({ plan, isPublic = false, viewMode = 'grid' }) => {
       </Link>
     );
   }
-
   return (
-    <Link to={linkTo} className="group block">
+    <Link to={linkTo} state={navigationState} className="group block">
       <Card className="overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-300 group-hover:scale-[1.02] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
         <div className="relative">
           {/* Image */}

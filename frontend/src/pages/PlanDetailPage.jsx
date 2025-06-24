@@ -1,363 +1,641 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Edit, 
-  Share2, 
-  Calendar, 
-  DollarSign, 
+"use client"
+import { useState, useEffect } from "react"
+import { useParams, useNavigate, useLocation } from "react-router-dom"
+import {
+  ArrowLeft,
+  Edit,
+  Share2,
+  Calendar,
+  DollarSign,
   Eye,
   Clock,
-  Plus,
-  Wand2,
-  Home
-} from 'lucide-react';
-import { Button } from '../components/ui/Button.jsx';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card.jsx';
-import { Badge } from '../components/ui/Badge.jsx';
-import { plansAPI, communityAPI, aiAPI } from '../lib/api.js';
-import { 
-  planSections, 
-  ACTIVITY_PREFERENCES,
-  COMPANION_PREFERENCES 
-} from '../lib/constants.js';
-
-// Import section components
-import {
-  AboutThePlace,
-  BestTimeToVisit,
-  TopActivities,
-  LocalCuisineRecommendations,
-  PackingChecklist,
-  Weather
-} from '../components/sections/index.js';
-import EnhancedItinerary from '../components/sections/EnhancedItinerary.jsx';
-import EnhancedTopPlacesToVisit from '../components/sections/EnhancedTopPlacesToVisit.jsx';
+  Home,
+  MapPin,
+  Star,
+  Heart,
+  ChefHat,
+  Backpack,
+  Cloud,
+  Users,
+  Building2,
+  Navigation,
+  CheckCircle,
+} from "lucide-react"
+import { Button } from "../components/ui/Button.jsx"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card.jsx"
+import { Badge } from "../components/ui/Badge.jsx"
+import { plansAPI } from "../lib/api.js"
 
 const PlanDetailPage = ({ isPublic = false }) => {
-  const { planId } = useParams();
-  const navigate = useNavigate();
-  const [plan, setPlan] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const { planId } = useParams()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [plan, setPlan] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState("overview")
+
   useEffect(() => {
     const fetchPlan = async () => {
       try {
-        setLoading(true);
-        let response;
-        
+        setLoading(true)
+
+        // Check if plan data was passed through router state first
+        if (location.state && location.state.plan) {
+          console.log("Using plan data from router state:", location.state.plan)
+          setPlan(location.state.plan)
+          setLoading(false)
+          return
+        }
+
+        // Otherwise, fetch from API
+        let response
+
         if (isPublic) {
           // Fetch from community API for public plans
-          response = await plansAPI.getPlan(planId);
-          console.log('Fetched public plan:', response.data);
-          setPlan(response.data.data.plan);
+          response = await plansAPI.getPlan(planId)
+          console.log("Fetched public plan:", response.data)
+          setPlan(response.data.data.plan)
         } else {
           // Fetch from plans API for user plans
-          response = await plansAPI.getPlan(planId);
-          console.log('Fetched private plan:', response.data.data.plan);
-          setPlan(response.data.data.plan);
+          response = await plansAPI.getPlan(planId)
+          console.log("Fetched private plan:", response.data.data.plan)
+          setPlan(response.data.data.plan)
         }
       } catch (error) {
-        console.error('Error fetching plan:', error);
-        // If plan not found, redirect to dashboard 
-        navigate('/dashboard');
+        console.error("Error fetching plan:", error)
+        // If plan not found, redirect to dashboard
+        navigate("/dashboard")
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
     if (planId) {
-      fetchPlan();
+      fetchPlan()
     }
-  }, [planId, navigate, isPublic]);
-  // const generateWithAI = async () => {
-  //   if (!plan || isPublic) {
-  //     // Don't allow AI generation for public plans
-  //     return;
-  //   }
-    
-  //   setIsGeneratingAI(true);
-  //   try {
-  //     // Use the new AI API to generate a complete plan
-  //     const response = await aiAPI.generatePlan({
-  //       nameoftheplace: plan.nameoftheplace,
-  //       userPrompt: Generate comprehensive travel information for ${plan.nameoftheplace},
-  //       numberOfDays: 3, // Default to 3 days
-  //       budgetRange: 'medium',
-  //       travelStyle: 'balanced',
-  //       interests: []
-  //     });
-
-  //     if (response.success) {
-  //       const aiData = response.data.plan;
-        
-  //       // Update plan with AI data
-  //       const updatedPlan = {
-  //         ...plan,
-  //         abouttheplace: aiData.abouttheplace || plan.abouttheplace,
-  //         besttimetovisit: aiData.besttimetovisit,
-  //         adventuresactivitiestodo: aiData.adventuresactivitiestodo,
-  //         localcuisinerecommendations: aiData.localcuisinerecommendations,
-  //         packingchecklist: aiData.packingchecklist,
-  //         topplacestovisit: aiData.topplacestovisit,
-  //         itinerary: aiData.itinerary
-  //       };
-
-  //       setPlan(updatedPlan);
-        
-  //       // Update plan in database
-  //       try {
-  //         await plansAPI.updatePlan(planId, {
-  //           besttimetovisit: updatedPlan.besttimetovisit,
-  //           adventuresactivitiestodo: updatedPlan.adventuresactivitiestodo,
-  //           localcuisinerecommendations: updatedPlan.localcuisinerecommendations,
-  //           packingchecklist: updatedPlan.packingchecklist,
-  //           topplacestovisit: updatedPlan.topplacestovisit,
-  //           itinerary: updatedPlan.itinerary
-  //         });
-  //         console.log('Plan updated successfully in database');
-  //       } catch (updateError) {
-  //         console.error('Error updating plan in database:', updateError);
-  //       }
-  //     } else {
-  //       console.error('AI generation failed:', response.error);
-  //     }
-      
-  //   } catch (error) {
-  //     console.error('Error generating AI content:', error);
-  //   } finally {
-  //     setIsGeneratingAI(false);
-  //   }
-  // };
-
-  const formatDateRange = (fromDate, toDate) => {
-    if (!fromDate || !toDate) return 'Dates not set';
-    const from = new Date(fromDate).toLocaleDateString('en-US', { 
-      month: 'long', 
-      day: 'numeric',
-      year: 'numeric'
-    });
-    const to = new Date(toDate).toLocaleDateString('en-US', { 
-      month: 'long', 
-      day: 'numeric',
-      year: 'numeric'
-    });
-    return `${from} - ${to}`;
-  };
-
-  const calculateDays = (fromDate, toDate) => {
-    if (!fromDate || !toDate) return 0;
-    const start = new Date(fromDate);
-    const end = new Date(toDate);
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
+  }, [planId, navigate, isPublic, location.state])
 
   const getImageUrl = (imageUrl) => {
-    return imageUrl || 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=400&fit=crop&q=80';
-  };
+    if (imageUrl) return imageUrl
+    return "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=400&fit=crop&q=80"
+  }
 
-  const getStatusColor = (status) => {
-    const colors = {
-      planning: 'bg-blue-100 text-blue-800 border-blue-200',
-      active: 'bg-green-100 text-green-800 border-green-200',
-      completed: 'bg-gray-100 text-gray-800 border-gray-200',
-      cancelled: 'bg-red-100 text-red-800 border-red-200'
-    };
-    return colors[status] || colors.planning;
-  };
-
-  const renderSectionContent = (sectionId) => {
-    if (!plan) return null;
-
-    switch (sectionId) {
-      case 'abouttheplace':
-        return <AboutThePlace content={plan.abouttheplace} planId={planId} allowEdit={true} />;
-      
-      case 'besttimetovisit':
-        return <BestTimeToVisit content={plan.besttimetovisit} planId={planId} allowEdit={true} />;
-      
-      case 'adventuresactivitiestodo':
-        return <TopActivities activities={plan.adventuresactivitiestodo || []} planId={planId} allowEdit={true} />;
-      case 'topplacestovisit':
-      return <EnhancedTopPlacesToVisit places={plan.topplacestovisit || []} planId={planId} allowEdit={true} />;
-      case 'itinerary':
-      return <EnhancedItinerary itinerary={plan.itinerary || []} planId={planId} allowEdit={true} />;
-      
-      case 'localcuisinerecommendations':
-        return <LocalCuisineRecommendations recommendations={plan.localcuisinerecommendations || []} planId={planId} allowEdit={true} />;
-      
-      case 'packingchecklist':
-        return <PackingChecklist checklist={plan.packingchecklist || []} planId={planId} allowEdit={true} />;
-      
-      case 'weather':
-        return <Weather weatherInfo={plan.besttimetovisit} planId={planId} allowEdit={true} />;
-      
-      case 'imagination':
+  const renderContent = () => {
+    switch (activeTab) {
+      case "overview":
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Trip Vision</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-gray-600">
-                  Share your dreams and expectations for this trip. What makes this journey special to you?
+          <div className="space-y-6">
+            {/* About Section */}
+            <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+              <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/30 dark:to-purple-950/30">
+                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <Building2 className="w-4 h-4 text-white" />
+                  </div>
+                  About {plan.nameoftheplace}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                  {plan.abouttheplace || "No description available for this destination."}
                 </p>
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <p className="text-gray-700 leading-relaxed">
-                    {plan.abouttheplace || 'Add your personal thoughts and dreams about this trip...'}
+              </CardContent>
+            </Card>
+
+            {/* Trip Statistics */}
+            <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+              <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-950/30 dark:to-teal-950/30">
+                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Trip Statistics</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 border border-blue-200/50 dark:border-blue-800/30 rounded-xl backdrop-blur-sm">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
+                      {plan.duration || "N/A"}
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Duration</div>
+                  </div>
+                  <div className="text-center p-4 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 border border-emerald-200/50 dark:border-emerald-800/30 rounded-xl backdrop-blur-sm">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
+                      {plan.topplacestovisit?.length || 0}
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Destinations</div>
+                  </div>
+                  <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 border border-purple-200/50 dark:border-purple-800/30 rounded-xl backdrop-blur-sm">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
+                      {plan.adventuresactivitiestodo?.length || 0}
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Activities</div>
+                  </div>
+                  <div className="text-center p-4 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/50 dark:to-blue-950/50 border border-indigo-200/50 dark:border-indigo-800/30 rounded-xl backdrop-blur-sm">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{plan.views || 0}</div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Views</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Plan Author */}
+            {plan.userId && (
+              <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+                <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-slate-50/50 to-blue-50/50 dark:from-slate-950/30 dark:to-blue-950/30">
+                  <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+                      <Users className="w-4 h-4 text-white" />
+                    </div>
+                    Plan Author
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-semibold shadow-md">
+                      {plan.userId.firstName?.[0]}
+                      {plan.userId.lastName?.[0]}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-white">
+                        {plan.userId.firstName} {plan.userId.lastName}
+                      </p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        Created on{" "}
+                        {new Date(plan.createdAt).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )
+
+      case "besttimetovisit":
+        return (
+          <div className="space-y-6">
+            <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+              <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/30">
+                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-4 h-4 text-white" />
+                  </div>
+                  Best Time to Visit {plan.nameoftheplace}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {plan.besttimetovisit ? (
+                  <div className="space-y-6">
+                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                      {plan.besttimetovisit.overview}
+                    </p>                    <div className="grid gap-4 md:grid-cols-2">
+                      {Array.isArray(plan.besttimetovisit.seasons) ? plan.besttimetovisit.seasons.map((season, index) => (
+                        <div
+                          key={index}
+                          className="p-4 border border-slate-200/50 dark:border-gray-700/50 rounded-xl bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-800/50 dark:to-blue-950/20 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300"
+                        >
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                              <Calendar className="w-3 h-3 text-white" />
+                            </div>
+                            <h3 className="font-semibold text-slate-900 dark:text-white">{season.season}</h3>
+                            <span className="text-xs text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded-full border border-blue-200/50 dark:border-blue-800/30">
+                              {season.months}
+                            </span>
+                          </div>
+                          <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
+                            {season.description}
+                          </p>
+                        </div>
+                      )) : (
+                        <div className="col-span-2 text-center text-slate-500 py-4">
+                          No seasonal information available
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-center py-8">No seasonal information available.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )
+
+      case "topplacestovisit":
+        return (
+          <div className="space-y-6">
+            <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+              <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-950/30 dark:to-teal-950/30">
+                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+                    <MapPin className="w-4 h-4 text-white" />
+                  </div>
+                  Key Destinations in {plan.nameoftheplace}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {plan.topplacestovisit?.length > 0 ? (                  <div className="space-y-4">
+                    {Array.isArray(plan.topplacestovisit) ? plan.topplacestovisit.map((place, index) => (
+                      <div
+                        key={index}
+                        className="p-4 border border-slate-200/50 dark:border-gray-700/50 rounded-xl bg-gradient-to-br from-white to-emerald-50/30 dark:from-gray-800/50 dark:to-emerald-950/20 backdrop-blur-sm shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center mt-1 flex-shrink-0">
+                            <MapPin className="w-3 h-3 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-slate-900 dark:text-white mb-2">{place.name}</h3>
+                            <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-2">
+                              {place.description}
+                            </p>
+                            {place.duration && (
+                              <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-full w-fit border border-emerald-200/50 dark:border-emerald-800/30">
+                                <Clock className="w-3 h-3" />
+                                <span>Recommended duration: {place.duration}</span>
+                              </div>                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="text-center text-slate-500 py-4">
+                        No places to visit available
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-center py-8">No destinations listed.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )
+
+      case "adventuresactivitiestodo":
+        return (
+          <div className="space-y-6">
+            <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+              <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-950/30 dark:to-pink-950/30">
+                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
+                    <Star className="w-4 h-4 text-white" />
+                  </div>
+                  Activities & Experiences
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {plan.adventuresactivitiestodo?.length > 0 ? (                  <div className="space-y-3">
+                    {Array.isArray(plan.adventuresactivitiestodo) ? plan.adventuresactivitiestodo.map((activity, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 p-3 border border-slate-200/50 dark:border-gray-700/50 rounded-xl bg-gradient-to-r from-white to-purple-50/30 dark:from-gray-800/50 dark:to-purple-950/20 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300"
+                      >
+                        <div className="w-5 h-5 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <CheckCircle className="w-3 h-3 text-white" />
+                        </div>                        <span className="text-slate-700 dark:text-slate-300">{activity}</span>
+                      </div>
+                    )) : (
+                      <div className="text-center text-slate-500 py-4">
+                        No adventures/activities available
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-center py-8">No activities listed.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )
+
+      case "itinerary":
+        return (
+          <div className="space-y-6">
+            <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+              <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-indigo-50/50 to-blue-50/50 dark:from-indigo-950/30 dark:to-blue-950/30">
+                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg flex items-center justify-center">
+                    <Clock className="w-4 h-4 text-white" />
+                  </div>
+                  Daily Itinerary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {plan.itinerary?.length > 0 ? (
+                  <div className="space-y-6">
+                    {plan.itinerary.map((day, index) => (
+                      <div key={index} className="relative">
+                        <div className="flex items-start gap-4">
+                          <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-xl flex items-center justify-center text-sm font-semibold shadow-md">
+                              {day.day}
+                            </div>
+                            {index < plan.itinerary.length - 1 && (
+                              <div className="w-px h-12 bg-gradient-to-b from-indigo-300 to-blue-300 dark:from-indigo-600 dark:to-blue-600 mt-2"></div>
+                            )}
+                          </div>
+                          <div className="flex-1 pb-4">
+                            <h3 className="font-semibold text-slate-900 dark:text-white mb-3">{day.title}</h3>                            <div className="space-y-2">
+                              {Array.isArray(day.activities) ? day.activities.map((activity, actIndex) => (
+                                <div
+                                  key={actIndex}
+                                  className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 p-3 bg-gradient-to-r from-indigo-50/50 to-blue-50/50 dark:from-indigo-950/30 dark:to-blue-950/30 rounded-lg border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm"
+                                >
+                                  <div className="w-1.5 h-1.5 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-full flex-shrink-0"></div>
+                                  {activity}
+                                </div>
+                              )) : (
+                                <div className="text-sm text-slate-600 dark:text-slate-400 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                                  No activities available for this day
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-center py-8">No itinerary available.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )
+
+      case "localcuisinerecommendations":
+        return (
+          <div className="space-y-6">
+            <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+              <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/30">
+                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
+                    <ChefHat className="w-4 h-4 text-white" />
+                  </div>
+                  Local Cuisine Recommendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {plan.localcuisinerecommendations?.length > 0 ? (
+                  <div className="space-y-4">
+                    {Array.isArray(plan.localcuisinerecommendations) ? plan.localcuisinerecommendations.map((cuisine, index) => (
+                      <div
+                        key={index}
+                        className="p-4 border border-slate-200/50 dark:border-gray-700/50 rounded-xl bg-gradient-to-br from-white to-amber-50/30 dark:from-gray-800/50 dark:to-amber-950/20 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-6 h-6 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center mt-1 flex-shrink-0">
+                            <ChefHat className="w-3 h-3 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="font-semibold text-slate-900 dark:text-white">{cuisine.dish}</h3>
+                              <span className="text-sm font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 px-3 py-1 rounded-full border border-amber-200/50 dark:border-amber-800/30">
+                                {cuisine.price}
+                              </span>
+                            </div>                            <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
+                              {cuisine.description}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="text-center text-slate-500 py-4">
+                        No cuisine recommendations available
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-center py-8">No cuisine recommendations available.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )
+
+      case "packingchecklist":
+        return (
+          <div className="space-y-6">
+            <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+              <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-teal-50/50 to-cyan-50/50 dark:from-teal-950/30 dark:to-cyan-950/30">
+                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg flex items-center justify-center">
+                    <Backpack className="w-4 h-4 text-white" />
+                  </div>
+                  Packing Checklist
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {plan.packingchecklist?.length > 0 ? (
+                  <div className="space-y-2">
+                    {Array.isArray(plan.packingchecklist) ? plan.packingchecklist.map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 p-3 hover:bg-gradient-to-r hover:from-teal-50/50 hover:to-cyan-50/50 dark:hover:from-teal-950/30 dark:hover:to-cyan-950/30 rounded-lg transition-all duration-300 border border-transparent hover:border-teal-200/50 dark:hover:border-teal-800/30"
+                      >
+                        <input
+                          type="checkbox"
+                          id={`item-${index}`}
+                          className="w-4 h-4 text-teal-600 bg-white dark:bg-gray-700 border-slate-300 dark:border-gray-600 rounded focus:ring-teal-500 focus:ring-2"
+                        />
+                        <label
+                          htmlFor={`item-${index}`}
+                          className="flex-1 text-slate-700 dark:text-slate-300 cursor-pointer"
+                        >
+                          {item}                        </label>
+                      </div>
+                    )) : (
+                      <div className="text-center text-slate-500 py-4">
+                        No packing checklist available
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-center py-8">No packing checklist available.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )
+
+      case "weather":
+        return (
+          <div className="space-y-6">
+            <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+              <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-sky-50/50 to-blue-50/50 dark:from-sky-950/30 dark:to-blue-950/30">
+                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-sky-500 to-blue-600 rounded-lg flex items-center justify-center">
+                    <Cloud className="w-4 h-4 text-white" />
+                  </div>
+                  Weather Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400 p-4 bg-gradient-to-r from-sky-50/50 to-blue-50/50 dark:from-sky-950/30 dark:to-blue-950/30 rounded-xl border border-sky-200/50 dark:border-sky-800/30 backdrop-blur-sm">
+                  <div className="w-8 h-8 bg-gradient-to-br from-sky-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Cloud className="w-4 h-4 text-white" />
+                  </div>
+                  <p>
+                    Weather information will be displayed here. This can include seasonal weather patterns, temperature
+                    ranges, and weather-related travel tips.
                   </p>
                 </div>
-                {/* Activity Preferences */}
-                <div className="space-y-3">
-                  <h4 className="font-medium">Activity Preferences</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {ACTIVITY_PREFERENCES.map((activity) => {
-                      const Icon = activity.icon;
-                      return (
-                        <div key={activity.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                          <Icon className="w-4 h-4 text-blue-600" />
-                          <span className="text-sm">{activity.displayName}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                {/* Companion Preferences */}
-                <div className="space-y-3">
-                  <h4 className="font-medium">Travel Companions</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {COMPANION_PREFERENCES.map((companion) => {
-                      const Icon = companion.icon;
-                      return (
-                        <div key={companion.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                          <Icon className="w-4 h-4 text-green-600" />
-                          <span className="text-sm">{companion.displayName}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      
+              </CardContent>
+            </Card>
+          </div>
+        )
+
       default:
         return (
-          <Card>
-            <CardContent className="text-center py-8 text-gray-500">
-              <p>No content available for this section yet.</p>
-              <p className="text-sm mt-2">Try generating content with AI!</p>
-            </CardContent>
-          </Card>
-        );
+          <div className="space-y-6">
+            <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+              <CardContent className="text-center py-12">
+                <div className="w-12 h-12 bg-gradient-to-br from-slate-400 to-slate-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Navigation className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-slate-500">Select a section from the sidebar to view details.</p>
+              </CardContent>
+            </Card>
+          </div>
+        )
     }
-  };
+  }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-blue-950">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center space-y-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
             <p className="text-slate-600 dark:text-slate-400">Loading plan details...</p>
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   if (!plan) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-blue-950">
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center space-y-4">
-            <h1 className="text-2xl font-bold text-gray-900">Plan Not Found</h1>
-            <p className="text-gray-600">The plan you're looking for doesn't exist.</p>
-            <Button onClick={() => navigate('/dashboard')}>
+          <div className="text-center space-y-4 max-w-md mx-auto p-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-slate-400 to-slate-500 rounded-2xl flex items-center justify-center mx-auto">
+              <MapPin className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-xl font-semibold text-slate-900 dark:text-white">Plan Not Found</h1>
+            <p className="text-slate-600 dark:text-slate-400">The plan you're looking for doesn't exist.</p>
+            <Button
+              onClick={() => navigate("/dashboard")}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-md hover:shadow-lg transition-all duration-300"
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Plans
             </Button>
           </div>
         </div>
       </div>
-    );
+    )
   }
 
-  const days = calculateDays(plan.fromdate, plan.todate);
-  // console.log('Plan details:', plan.data.plan);
+  // Navigation items for sidebar
+  const sidebarItems = [
+    { id: "overview", label: "Overview", icon: Home, color: "from-blue-500 to-purple-600" },
+    { id: "besttimetovisit", label: "Best Time to Visit", icon: Calendar, color: "from-blue-500 to-indigo-600" },
+    { id: "topplacestovisit", label: "Key Destinations", icon: MapPin, color: "from-emerald-500 to-teal-600" },
+    { id: "adventuresactivitiestodo", label: "Activities", icon: Star, color: "from-purple-500 to-pink-600" },
+    { id: "itinerary", label: "Itinerary", icon: Clock, color: "from-indigo-500 to-blue-600" },
+    { id: "localcuisinerecommendations", label: "Local Cuisine", icon: ChefHat, color: "from-amber-500 to-orange-600" },
+    { id: "packingchecklist", label: "Packing List", icon: Backpack, color: "from-teal-500 to-cyan-600" },
+    { id: "weather", label: "Weather", icon: Cloud, color: "from-sky-500 to-blue-600" },
+  ]
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
-      {/* Hero Section */}
-      <div className="relative h-96 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-blue-950">
+      {/* Professional Hero Section */}
+      <div className="relative h-64 overflow-hidden">
         <img
-          src={getImageUrl(plan.imageurl)}
+          src={getImageUrl(plan.imageurl) || "/placeholder.svg"}
           alt={plan.nameoftheplace}
           className="w-full h-full object-cover"
-          onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=400&fit=crop&q=80'}
+          onError={(e) =>
+            (e.target.src = "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=400&fit=crop&q=80")
+          }
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-        
+        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60" />
+
         {/* Header Controls */}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
-          <Button variant="secondary" onClick={() => navigate('/dashboard')}>
+          <Button
+            variant="secondary"
+            onClick={() => navigate(-1)}
+            className="bg-white/90 hover:bg-white text-slate-900 border-0 shadow-lg backdrop-blur-md"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
           <div className="flex gap-2">
-            <Button variant="secondary" size="sm">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="bg-white/90 hover:bg-white text-slate-900 border-0 shadow-lg backdrop-blur-md"
+            >
               <Share2 className="w-4 h-4 mr-2" />
               Share
             </Button>
-            <Button variant="secondary" size="sm">
-              <Edit className="w-4 h-4 mr-2" />
-              Edit
-            </Button>
+            {!isPublic && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="bg-white/90 hover:bg-white text-slate-900 border-0 shadow-lg backdrop-blur-md"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit
+              </Button>
+            )}
           </div>
         </div>
 
         {/* Plan Title and Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-8">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-center gap-3 mb-4">
-              <Badge className={`${getStatusColor(plan.status)} border`}>
-                {plan.status || 'Planning'}
+        <div className="absolute bottom-0 left-0 right-0 p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center gap-3 mb-3">
+              <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 px-3 py-1 text-xs font-medium shadow-md">
+                {plan.status || "Community Plan"}
               </Badge>
-              {plan.is_published && (
-                <Badge className="bg-purple-100 text-purple-800 border-purple-200">
-                  <Share2 className="w-3 h-3 mr-1" />
-                  Published
+              {plan.rating && (
+                <Badge className="bg-gradient-to-r from-amber-500 to-orange-600 text-white border-0 px-3 py-1 text-xs font-medium shadow-md">
+                  ★ {plan.rating}
                 </Badge>
               )}
             </div>
-            
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-              {plan.nameoftheplace}
-            </h1>
-            
-            <div className="flex flex-wrap gap-6 text-white/90">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                <span>{formatDateRange(plan.fromdate, plan.todate)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                <span>{days} {days === 1 ? 'day' : 'days'}</span>
-              </div>
+
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-4 drop-shadow-lg">{plan.nameoftheplace}</h1>
+
+            <div className="flex flex-wrap gap-6 text-white text-sm">
+              {plan.duration && (
+                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">
+                  <Clock className="w-4 h-4" />
+                  <span>{plan.duration}</span>
+                </div>
+              )}
               {plan.budget && (
-                <div className="flex items-center gap-2">
-                  <DollarSign className="w-5 h-5" />
+                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">
+                  <DollarSign className="w-4 h-4" />
                   <span>${plan.budget.toLocaleString()}</span>
                 </div>
               )}
               {plan.views && (
-                <div className="flex items-center gap-2">
-                  <Eye className="w-5 h-5" />
+                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">
+                  <Eye className="w-4 h-4" />
                   <span>{plan.views} views</span>
+                </div>
+              )}
+              {plan.likes && (
+                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">
+                  <Heart className="w-4 h-4" />
+                  <span>{plan.likes} likes</span>
                 </div>
               )}
             </div>
@@ -365,202 +643,61 @@ const PlanDetailPage = ({ isPublic = false }) => {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex gap-8 overflow-x-auto">
-            {[
-              { id: 'overview', label: 'Overview', icon: Home },
-              ...planSections.map(section => ({
-                id: section.id,
-                label: section.name,
-                icon: () => section.icon
-              })),
-              { id: 'expenses', label: 'Expenses', icon: DollarSign }
-            ].map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-4 border-b-2 transition-colors whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {tab.label}
-                </button>
-              );
-            })}
+      {/* Main Content Layout */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex gap-8">
+          {/* Professional Sidebar Navigation */}
+          <div className="w-64 flex-shrink-0">
+            <div className="sticky top-8">
+              <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+                <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-slate-50/50 to-blue-50/50 dark:from-slate-950/30 dark:to-blue-950/30 py-4">
+                  <CardTitle className="text-sm font-semibold text-slate-900 dark:text-white uppercase tracking-wide">
+                    Plan Sections
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <nav>
+                    {sidebarItems.map((item) => {
+                      const Icon = item.icon
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => setActiveTab(item.id)}
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium transition-all duration-300 border-r-2 group ${
+                            activeTab === item.id
+                              ? "bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50 text-slate-900 dark:text-white border-blue-500 dark:border-blue-400"
+                              : "text-slate-700 dark:text-slate-300 hover:bg-gradient-to-r hover:from-slate-50 hover:to-blue-50 dark:hover:from-slate-950/30 dark:hover:to-blue-950/30 border-transparent"
+                          }`}
+                        >
+                          <div
+                            className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                              activeTab === item.id
+                                ? `bg-gradient-to-br ${item.color} shadow-md`
+                                : "bg-slate-100 dark:bg-gray-700 group-hover:bg-slate-200 dark:group-hover:bg-gray-600"
+                            }`}
+                          >
+                            <Icon
+                              className={`w-3 h-3 ${
+                                activeTab === item.id ? "text-white" : "text-slate-600 dark:text-slate-400"
+                              }`}
+                            />
+                          </div>
+                          <span>{item.label}</span>
+                        </button>
+                      )
+                    })}
+                  </nav>
+                </CardContent>
+              </Card>
+            </div>
           </div>
+
+          {/* Content Area */}
+          <div className="flex-1 min-w-0">{renderContent()}</div>
         </div>
       </div>
-
-      {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Description */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>About this trip</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                    {plan.abouttheplace || 'No description available for this trip.'}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Quick Stats */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Trip Statistics</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{days}</div>
-                      <div className="text-sm text-gray-600">Days</div>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">{plan.top_places_to_visit?.length || 0}</div>
-                      <div className="text-sm text-gray-600">Places</div>
-                    </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-600">{plan.top_adventure_activities?.length || 0}</div>
-                      <div className="text-sm text-gray-600">Activities</div>
-                    </div>
-                    <div className="text-center p-4 bg-orange-50 rounded-lg">
-                      <div className="text-2xl font-bold text-orange-600">{plan.views || 0}</div>
-                      <div className="text-sm text-gray-600">Views</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Quick Actions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>                <CardContent className="space-y-3">
-                  {!isPublic && (
-                    <>
-                      <Button className="w-full" variant="outline">
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Plan
-                      </Button>
-                      <Button 
-                        className="w-full" 
-                        variant="outline" 
-                        // onClick={generateWithAI}
-                        disabled={isGeneratingAI}
-                      >
-                        <Wand2 className="w-4 h-4 mr-2" />
-                        {isGeneratingAI ? 'Generating...' : 'Generate with AI'}
-                      </Button>
-                    </>
-                  )}
-                  <Button className="w-full" variant="outline">
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Share Plan
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Travel Details */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Travel Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Status</span>
-                    <Badge className={getStatusColor(plan.status)}>
-                      {plan.status || 'Planning'}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Duration</span>
-                    <span className="font-medium">{days} days</span>
-                  </div>
-                  {plan.budget && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Budget</span>
-                      <span className="font-medium">${plan.budget.toLocaleString()}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Created</span>
-                    <span className="font-medium">
-                      {new Date(plan.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-
-        {/* Dynamic Plan Sections */}
-        {planSections.map((section) => (
-          activeTab === section.id && (
-            <div key={section.id} className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                  {section.icon}
-                  {section.name}
-                </h2>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Content
-                </Button>
-              </div>
-              
-              {/* Render section content using proper components */}
-              {renderSectionContent(section.id)}
-            </div>
-          )
-        ))}
-
-        {/* Expenses Section */}
-        {activeTab === 'expenses' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold flex items-center gap-2">
-                <DollarSign className="w-6 h-6" />
-                Expenses
-              </h2>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Expense
-              </Button>
-            </div>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Expense Tracker</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-gray-500">
-                  <DollarSign className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>No expenses recorded yet.</p>
-                  <p className="text-sm">Add your first expense to get started!</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
     </div>
-  );
-};
+  )
+}
 
-export default PlanDetailPage;
+export default PlanDetailPage

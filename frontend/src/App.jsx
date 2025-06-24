@@ -13,12 +13,7 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import PlanDetailPage from './pages/PlanDetailPage.jsx';
 import NewPlanPage from './pages/NewPlanPage.jsx';
 import CommunityPlansPage from './pages/CommunityPlansPage.jsx';
-import ProfilePage from './pages/ProfilePage.jsx';
 import LoadingSpinner from './components/common/LoadingSpinner.jsx';
-import ComponentDemo from './components/demo/ComponentDemo.jsx';
-import IntegrationTest from './components/demo/IntegrationTest.jsx';
-
-// Import new integrated pages
 import ExpensesPage from './pages/ExpensesPage.jsx';
 import PaymentsPage from './pages/PaymentsPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
@@ -39,13 +34,11 @@ function App() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Routes>
-        {/* Public routes */}
+      <Routes>        {/* Public routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/community-plans" element={<CommunityPlansPage />} />
-        <Route path="/demo" element={<ComponentDemo />} />
-        <Route path="/test" element={<IntegrationTest />} />
-          {/* Auth routes */}
+        
+        {/* Auth routes */}
         <Route 
           path="/login" 
           element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} 
@@ -69,15 +62,11 @@ function App() {
           element={user ? <DashboardPage /> : <Navigate to="/login" replace />} 
         />
         <Route 
-          path="/plans" 
-          element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} 
-        />
-        <Route 
           path="/plans/new" 
           element={user ? <NewPlanPage /> : <Navigate to="/login" replace />} 
         />        
         <Route 
-          path="/plans/:planId/plan" 
+          path="/plans/:planId" 
           element={user ? <PlanDetailPage /> : <Navigate to="/login" replace />} 
         />
         
@@ -86,18 +75,8 @@ function App() {
           path="/plans/:planId/community-plan" 
           element={<PlanDetailPage isPublic={true} />} 
         />
-        <Route 
-          path="/plans/:planId" 
-          element={user ? <PlanDetailPage /> : <Navigate to="/login" replace />} 
-        />
         
-        {/* Profile and Account */}
-        <Route 
-          path="/profile" 
-          element={user ? <ProfilePage /> : <Navigate to="/login" replace />} 
-        />
-        
-        {/* New Backend-Integrated Routes */}
+        {/* Expenses Routes */}
         <Route 
           path="/expenses" 
           element={user ? <ExpensesPage /> : <Navigate to="/login" replace />} 
@@ -106,6 +85,8 @@ function App() {
           path="/plans/:planId/expenses" 
           element={user ? <ExpensesPage /> : <Navigate to="/login" replace />} 
         />
+        
+        {/* Other Protected Routes */}
         <Route 
           path="/payments" 
           element={user ? <PaymentsPage /> : <Navigate to="/login" replace />} 

@@ -5,27 +5,23 @@ import { cn } from '../lib/utils.js';
 import { Button } from './ui/Button.jsx';
 import Logo from './common/Logo.jsx';
 import ThemeDropdown from './ThemeDropdown.jsx';
-import FeedbackSheet from './common/FeedbackSheet.jsx';
 import { 
   ChevronDown, 
   User, 
   CreditCard, 
   DollarSign, 
   MessageSquare, 
-  BarChart3,
   UserPlus,
   ShieldCheck,
   LogOut
 } from 'lucide-react';
 
-const Header = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+const Header = () => {  const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef(null);
   
   const isHomePage = location.pathname === '/';
-  const isDashboard = location.pathname.startsWith('/dashboard');
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -41,18 +37,13 @@ const Header = () => {
 
   const navLinks = [
     { id: 'how-it-works', text: 'How it works' },
-    { id: 'public-plans', text: 'Community Plans' },
+    { id: 'community-plans', text: 'Community Plans' },
     { id: 'pricing', text: 'Pricing' }
   ];
 
   const userMenuItems = [
     { 
       icon: User, 
-      label: 'Profile', 
-      href: '/profile' 
-    },
-    { 
-      icon: BarChart3, 
       label: 'Dashboard', 
       href: '/dashboard' 
     },
@@ -94,39 +85,58 @@ const Header = () => {
         "w-full border-b border-border/40 z-50 sticky top-0",
         "bg-background backdrop-blur supports-[backdrop-filter]:bg-background/60"
       )}
+      style={{ minHeight: 44 }} // ensure enough height for sticky offset
     >
-      <nav className="lg:px-20 px-5 py-3 mx-auto">
-        <div className="flex justify-between w-full items-center">
+      <nav className="lg:px-20 px-5 py-3 mx-auto relative">        <div className="flex justify-between w-full items-center gap-4 relative">
           {/* Logo */}
           <Logo />
 
+          {/* Home button when not on homepage */}
+          {!isHomePage && (
+            <div className="hidden md:flex items-center">
+              <Link 
+                to="/" 
+                className="text-base font-medium hover:text-blue-600 transition-colors px-4 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+              >
+                Home
+              </Link>
+            </div>
+          )}
+
           {/* Navigation Links - Only show on home page */}
           {isHomePage && (
-            <div className="hidden md:flex items-center flex-1 justify-center">
-              <ul className="flex gap-8 items-center text-sm">
+            <div className="hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full pointer-events-none">
+              <ul className="flex gap-10 items-center text-base font-medium justify-center pointer-events-auto">
                 {navLinks.map((link) => (
                   <li
                     key={link.id}
                     className="hover:underline cursor-pointer transition-all hover:text-blue-600"
                   >
-                    <a href={`#${link.id}`}>{link.text}</a>
+                    <a
+                      href={`#${link.id}`}
+                      onClick={e => {
+                        e.preventDefault();
+                        if (isHomePage) {
+                          const section = document.getElementById(link.id);
+                          if (section) {
+                            section.scrollIntoView({ behavior: 'smooth' });
+                          }
+                        } else {
+                          window.location.href = `/#${link.id}`;
+                        }
+                      }}
+                    >
+                      {link.text}
+                    </a>
                   </li>
                 ))}
-                <li className="hover:underline cursor-pointer transition-all hover:text-blue-600">
-                  <Link to="/dashboard">
-                    Dashboard
-                  </Link>
-                </li>
               </ul>
             </div>
-          )}          {/* Auth Section */}
-          <div className="flex gap-4 justify-end items-center">
+          )}
+          {/* Auth Section */}
+          <div className="flex gap-4 justify-end items-center min-w-[180px]">
             {/* Theme Toggle - Always visible */}
             <ThemeDropdown />
-            
-            {/* Feedback - Always visible */}
-            <FeedbackSheet />
-            
             {!isAuthenticated ? (
               <>
                 <Link to="/login">
@@ -139,21 +149,9 @@ const Header = () => {
                     Sign Up
                   </Button>
                 </Link>
-              </>            ) : (
+              </>
+            ) : (
               <div className="flex items-center gap-4">
-                {!isDashboard && (
-                  <Link to="/dashboard">
-                    <Button variant="outline" size="sm">
-                      Dashboard
-                    </Button>
-                  </Link>
-                )}
-                <Link to="/community-plans">
-                  <Button variant="ghost" size="sm">
-                    Community Plans
-                  </Button>
-                </Link>
-                
                 {/* User Menu Dropdown */}
                 <div className="relative" ref={menuRef}>
                   <Button
@@ -169,7 +167,6 @@ const Header = () => {
                       showUserMenu && "rotate-180"
                     )} />
                   </Button>
-                  
                   {showUserMenu && (
                     <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
                       {userMenuItems.map((item) => {

@@ -1,144 +1,429 @@
-import React, { useState } from 'react';
-import { X, Sparkles, Plus, Users } from 'lucide-react';
-import NewPlanForm from '../components/NewPlanForm.jsx';
-import { Button } from '../components/ui/Button.jsx';
+"use client"
+
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import {
+  MapPin,
+  Calendar,
+  DollarSign,
+  Users,
+  Wand2,
+  Loader2,
+  MessageSquarePlus,
+  Sparkles,
+  Plus,
+  ArrowLeft,
+  CheckCircle2,
+  Clock,
+  Target,
+} from "lucide-react"
+import { Button } from "../components/ui/Button.jsx"
+import { Input } from "../components/ui/Input.jsx"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card.jsx"
+import api from "../lib/api.js"
+import LocationAutoComplete from "../components/LocationAutoComplete.jsx"
+import { ACTIVITY_PREFERENCES, COMPANION_PREFERENCES } from "../lib/constants.js"
 
 const NewPlanPage = () => {
-  const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
+  const [selectedActivities, setSelectedActivities] = useState([])
+
+  const [formData, setFormData] = useState({
+    nameoftheplace: "",
+    fromdate: "",
+    todate: "",
+    budget: "",
+    abouttheplace: "",
+    companion: "",
+    activityPreferences: [],
+  })
+
+  const activities = ACTIVITY_PREFERENCES.map((activity) => ({
+    id: activity.id,
+    label: activity.displayName,
+    icon: activity.icon,
+  }))
+
+  const companions = COMPANION_PREFERENCES.map((companion) => ({
+    id: companion.id,
+    label: companion.displayName,
+  }))
+
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const toggleActivity = (activityId) => {
+    setSelectedActivities((prev) => {
+      const updated = prev.includes(activityId) ? prev.filter((id) => id !== activityId) : [...prev, activityId]
+
+      setFormData((prevForm) => ({
+        ...prevForm,
+        activityPreferences: updated,
+      }))
+
+      return updated
+    })
+  }
+
+  const validateForm = () => {
+    if (!formData.nameoftheplace.trim()) {
+      alert("Please enter a destination")
+      return false
+    }
+    if (!formData.fromdate || !formData.todate) {
+      alert("Please select travel dates")
+      return false
+    }
+    if (new Date(formData.fromdate) >= new Date(formData.todate)) {
+      alert("End date must be after start date")
+      return false
+    }
+    return true
+  }
+
+  const handleCreatePlan = async (withAI = false) => {
+    if (!validateForm()) return
+
+    setLoading(true)
+    try {
+      const planData = {
+        nameoftheplace: formData.nameoftheplace,
+        userPrompt: formData.abouttheplace || `I want to visit ${formData.nameoftheplace}`,
+        isGeneratedUsingAI: withAI,
+        startDate: formData.fromdate,
+        endDate: formData.todate,
+        budgetRange: formData.budget ? `$${formData.budget}` : null,
+        travelStyle: formData.companion || "solo",
+        interests: selectedActivities,
+        numberOfDays:
+          formData.fromdate && formData.todate
+            ? Math.ceil((new Date(formData.todate) - new Date(formData.fromdate)) / (1000 * 60 * 60 * 24))
+            : null,
+      }
+
+      const response = await api.post("/plans", planData)
+
+      if (response.data.status === "success") {
+        setTimeout(() => {
+          navigate("/dashboard?refresh=true")
+        }, 500)
+      } else {
+        throw new Error(response.data.message || "Failed to create plan")
+      }
+    } catch (error) {
+      console.error("Error creating plan:", error)
+      alert(error.response?.data?.message || error.message || "Failed to create plan. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const features = [
+    {
+      icon: Sparkles,
+      title: "AI-Powered Intelligence",
+      description: "Smart recommendations based on your preferences and travel style",
+      color: "from-blue-500 to-purple-600",
+    },
+    {
+      icon: Target,
+      title: "Personalized Planning",
+      description: "Tailored itineraries that match your interests and budget",
+      color: "from-emerald-500 to-teal-600",
+    },
+    {
+      icon: Clock,
+      title: "Time Optimization",
+      description: "Efficient scheduling to make the most of your travel time",
+      color: "from-amber-500 to-orange-600",
+    },
+  ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-950 dark:to-purple-950">
-      <div className="container mx-auto px-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-blue-950 relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0">
+        <div className="absolute top-32 left-32 w-72 h-72 bg-gradient-to-br from-blue-100/20 to-indigo-100/20 dark:from-blue-900/15 dark:to-indigo-900/15 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-32 right-32 w-96 h-96 bg-gradient-to-br from-purple-100/20 to-pink-100/20 dark:from-purple-900/15 dark:to-pink-900/15 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      <div className="container mx-auto px-4 py-12 relative z-10 max-w-7xl">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium mb-4">
+          <Button
+            onClick={() => navigate("/dashboard")}
+            variant="outline"
+            className="mb-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-slate-200/50 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-700 transition-all duration-300 group"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+            Back to Dashboard
+          </Button>
+
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium mb-6 border border-blue-200/50 dark:border-blue-800/30 backdrop-blur-sm">
             <Sparkles className="w-4 h-4" />
             Create Your Dream Adventure
           </div>
-          
-          <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-4 tracking-tight">
             Plan Your Next
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
-              {" "}Adventure
+            <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 dark:from-blue-400 dark:via-purple-400 dark:to-indigo-400 bg-clip-text text-transparent">
+              Extraordinary Adventure
             </span>
           </h1>
-          
-          <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-3xl mx-auto">
-            Whether you're dreaming of a solo adventure, romantic getaway, or family vacation, 
-            our AI-powered travel planner will help you create the perfect itinerary.
+
+          <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-4xl mx-auto">
+            Whether you're dreaming of a solo adventure, romantic getaway, or family vacation, our AI-powered travel
+            planner will help you create the perfect itinerary.
           </p>
         </div>
 
-        {/* Action Cards */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
-          <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-2xl border border-gray-100 dark:border-gray-700 hover:shadow-3xl transition-all duration-300 group">
-            <div className="text-center space-y-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300">
-                <Sparkles className="w-8 h-8 text-white" />
-              </div>
-              
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  AI-Powered Planning
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Let our AI create a personalized itinerary with recommendations for activities, 
-                  restaurants, and hidden gems based on your preferences.
-                </p>
-              </div>
-              
-              <Button
-                onClick={() => setShowModal(true)}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+        {/* Features Preview */}
+        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-12">
+          {features.map((feature, index) => (
+            <div
+              key={index}
+              className="text-center p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl border border-slate-200/50 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            >
+              <div
+                className={`w-12 h-12 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md`}
               >
-                <Sparkles className="w-5 h-5 mr-2" />
-                Create AI Plan
-              </Button>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-2xl border border-gray-100 dark:border-gray-700 hover:shadow-3xl transition-all duration-300 group">
-            <div className="text-center space-y-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300">
-                <Plus className="w-8 h-8 text-white" />
+                <feature.icon className="w-6 h-6 text-white" />
               </div>
-              
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Manual Planning
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Prefer to plan yourself? Create a custom travel plan from scratch 
-                  and build your itinerary step by step.
-                </p>
-              </div>
-              
-              <Button
-                onClick={() => setShowModal(true)}
-                variant="outline"
-                className="w-full border-2 border-green-500 text-green-600 hover:bg-green-50 dark:border-green-400 dark:text-green-400 dark:hover:bg-green-950/20 font-semibold py-3 px-6 rounded-xl transition-all duration-200"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Create Manual Plan
-              </Button>
+              <h4 className="font-bold text-base md:text-lg text-slate-900 dark:text-white mb-2">{feature.title}</h4>
+              <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">{feature.description}</p>
             </div>
-          </div>
+          ))}
         </div>
 
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          <div className="text-center p-6">
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/50 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+        {/* Main Form */}
+        <Card className="max-w-6xl mx-auto border border-slate-200/50 dark:border-gray-700/50 shadow-2xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+          <CardHeader className="text-center pb-6 bg-gradient-to-r from-slate-50/50 to-blue-50/50 dark:from-slate-950/30 dark:to-blue-950/30 border-b border-slate-200/50 dark:border-gray-700/50">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <MapPin className="w-8 h-8 text-white" />
             </div>
-            <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Smart Recommendations</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400">AI-powered suggestions for activities, restaurants, and attractions</p>
-          </div>
-          
-          <div className="text-center p-6">
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <Plus className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <CardTitle className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              Create Your Travel Plan
+            </CardTitle>
+            <p className="text-slate-600 dark:text-slate-400">Let's plan your next adventure together</p>
+          </CardHeader>
+
+          <CardContent className="p-8">
+            <div className="grid lg:grid-cols-2 gap-8">
+              {/* Left Column */}
+              <div className="space-y-8">
+                {/* Destination Input */}
+                <div className="space-y-3">
+                  <label className="flex items-center text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                    <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-2">
+                      <MapPin className="w-3 h-3 text-white" />
+                    </div>
+                    Where would you like to go?
+                  </label>
+                  <LocationAutoComplete
+                    placeholder="Search for your destination city..."
+                    onLocationSelect={(location) => handleInputChange("nameoftheplace", location.name)}
+                    className="w-full h-12 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm border-slate-200/50 dark:border-gray-600/50 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 transition-all duration-300 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400"
+                  />
+                </div>
+
+                {/* Date Selection */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <label className="flex items-center text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center mr-2">
+                        <Calendar className="w-3 h-3 text-white" />
+                      </div>
+                      Departure Date
+                    </label>
+                    <Input
+                      type="date"
+                      value={formData.fromdate}
+                      onChange={(e) => handleInputChange("fromdate", e.target.value)}
+                      className="w-full h-12 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm border-slate-200/50 dark:border-gray-600/50 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 transition-all duration-300 rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <label className="flex items-center text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center mr-2">
+                        <Calendar className="w-3 h-3 text-white" />
+                      </div>
+                      Return Date
+                    </label>
+                    <Input
+                      type="date"
+                      value={formData.todate}
+                      onChange={(e) => handleInputChange("todate", e.target.value)}
+                      className="w-full h-12 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm border-slate-200/50 dark:border-gray-600/50 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 transition-all duration-300 rounded-xl"
+                    />
+                  </div>
+                </div>
+
+                {/* Budget */}
+                <div className="space-y-3">
+                  <label className="flex items-center text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    <div className="w-6 h-6 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center mr-2">
+                      <DollarSign className="w-3 h-3 text-white" />
+                    </div>
+                    Budget (Optional)
+                  </label>
+                  <Input
+                    type="number"
+                    placeholder="Enter your budget in USD"
+                    value={formData.budget}
+                    onChange={(e) => handleInputChange("budget", e.target.value)}
+                    className="w-full h-12 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm border-slate-200/50 dark:border-gray-600/50 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 transition-all duration-300 rounded-xl"
+                  />
+                </div>
+
+                {/* Travel Companion */}
+                <div className="space-y-4">
+                  <label className="flex items-center text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center mr-2">
+                      <Users className="w-3 h-3 text-white" />
+                    </div>
+                    Who are you travelling with? (Optional)
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {companions.map((companion) => (
+                      <Button
+                        key={companion.id}
+                        variant={formData.companion === companion.id ? "default" : "outline"}
+                        onClick={() => handleInputChange("companion", companion.id)}
+                        className={`h-12 transition-all duration-300 ${
+                          formData.companion === companion.id
+                            ? "bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md hover:shadow-lg"
+                            : "bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm border-slate-200/50 dark:border-gray-600/50 hover:bg-slate-100 dark:hover:bg-gray-600"
+                        }`}
+                      >
+                        <span className="text-xs md:text-sm">{companion.label}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-8">
+                {/* Activity Preferences */}
+                <div className="space-y-4">
+                  <label className="flex items-center text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg flex items-center justify-center mr-2">
+                      <Target className="w-3 h-3 text-white" />
+                    </div>
+                    What activities interest you? (Optional)
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {activities.map((activity) => {
+                      const Icon = activity.icon
+                      const isSelected = selectedActivities.includes(activity.id)
+                      return (
+                        <Button
+                          key={activity.id}
+                          variant={isSelected ? "default" : "outline"}
+                          onClick={() => toggleActivity(activity.id)}
+                          className={`flex items-center gap-2 h-12 transition-all duration-300 ${
+                            isSelected
+                              ? "bg-gradient-to-r from-indigo-500 to-blue-600 text-white shadow-md hover:shadow-lg"
+                              : "bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm border-slate-200/50 dark:border-gray-600/50 hover:bg-slate-100 dark:hover:bg-gray-600"
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          <span className="text-xs md:text-sm font-medium">{activity.label}</span>
+                        </Button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="space-y-3">
+                  <label className="flex items-center text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    <div className="w-6 h-6 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg flex items-center justify-center mr-2">
+                      <MessageSquarePlus className="w-3 h-3 text-white" />
+                    </div>
+                    Tell us about your trip (Optional)
+                  </label>
+                  <textarea
+                    placeholder="What kind of experience are you looking for? Any specific requirements or preferences?"
+                    value={formData.abouttheplace}
+                    onChange={(e) => handleInputChange("abouttheplace", e.target.value)}
+                    className="w-full px-4 py-3 border border-slate-200/50 dark:border-gray-600/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 focus:border-blue-500 dark:focus:border-blue-400 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm text-slate-900 dark:text-white transition-all duration-300 resize-none"
+                    rows={6}
+                  />
+                </div>
+
+                {/* Help Text */}
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/30 backdrop-blur-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckCircle2 className="w-3 h-3 text-white" />
+                    </div>
+                    <div className="text-xs md:text-sm text-blue-700 dark:text-blue-300">
+                      <p className="font-medium mb-1 text-sm md:text-base">Pro Tip:</p>
+                      <p>
+                        Choose "Generate AI Plan" for a complete itinerary with recommendations, or "Create Manual Plan"
+                        to build your own custom adventure step by step.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Flexible Planning</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Build your own itinerary or let AI do the work</p>
-          </div>
-          
-          <div className="text-center p-6">
-            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/50 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+
+            {/* Action Buttons - Full Width */}
+            <div className="flex flex-col sm:flex-row gap-4 pt-8 mt-8 border-t border-slate-200/50 dark:border-gray-700/50">
+              <Button
+                onClick={() => handleCreatePlan(false)}
+                disabled={loading}
+                className="flex-1 h-14 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-700 hover:via-teal-700 hover:to-cyan-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-0 group relative overflow-hidden"
+              >
+                {/* Shimmer effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer transition-opacity duration-700 -skew-x-12"></div>
+
+                {loading ? (
+                  <div className="flex items-center gap-2 relative z-10">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Creating Plan...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 relative z-10">
+                    <Plus className="w-5 h-5" />
+                    <span className="text-sm md:text-base">Create Manual Plan</span>
+                  </div>
+                )}
+              </Button>
+
+              <Button
+                onClick={() => handleCreatePlan(true)}
+                disabled={loading}
+                className="flex-1 h-14 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-0 group relative overflow-hidden"
+              >
+                {/* Shimmer effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer transition-opacity duration-700 -skew-x-12"></div>
+
+                {loading ? (
+                  <div className="flex items-center gap-2 relative z-10">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Generating AI Plan...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 relative z-10">
+                    <Wand2 className="w-5 h-5" />
+                    <span className="text-sm md:text-base">Generate AI Plan</span>
+                  </div>
+                )}
+              </Button>
             </div>
-            <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Share & Collaborate</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Share your plans with friends and family</p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
-
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Create New Plan
-              </h2>
-              <Button
-                onClick={() => setShowModal(false)}
-                variant="ghost"
-                size="sm"
-                className="hover:bg-gray-100 dark:hover:bg-gray-700 p-2"
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-            
-            <div className="p-6">
-              <NewPlanForm closeModal={() => setShowModal(false)} />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
-  );
-};
+  )
+}
 
-export default NewPlanPage;
+export default NewPlanPage
