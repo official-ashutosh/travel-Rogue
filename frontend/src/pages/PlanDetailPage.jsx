@@ -49,12 +49,14 @@ const PlanDetailPage = ({ isPublic = false }) => {
         
         if (isPublic) {
           // Fetch from community API for public plans
-          response = await communityAPI.getCommunityPlan(planId);
-          setPlan(response.data);
+          response = await plansAPI.getPlan(planId);
+          console.log('Fetched public plan:', response.data);
+          setPlan(response.data.data.plan);
         } else {
           // Fetch from plans API for user plans
           response = await plansAPI.getPlan(planId);
-          setPlan(response.data);
+          console.log('Fetched private plan:', response.data.data.plan);
+          setPlan(response.data.data.plan);
         }
       } catch (error) {
         console.error('Error fetching plan:', error);
@@ -69,65 +71,65 @@ const PlanDetailPage = ({ isPublic = false }) => {
       fetchPlan();
     }
   }, [planId, navigate, isPublic]);
-  const generateWithAI = async () => {
-    if (!plan || isPublic) {
-      // Don't allow AI generation for public plans
-      return;
-    }
+  // const generateWithAI = async () => {
+  //   if (!plan || isPublic) {
+  //     // Don't allow AI generation for public plans
+  //     return;
+  //   }
     
-    setIsGeneratingAI(true);
-    try {
-      // Use the new AI API to generate a complete plan
-      const response = await aiAPI.generatePlan({
-        nameoftheplace: plan.nameoftheplace,
-        userPrompt: `Generate comprehensive travel information for ${plan.nameoftheplace}`,
-        numberOfDays: 3, // Default to 3 days
-        budgetRange: 'medium',
-        travelStyle: 'balanced',
-        interests: []
-      });
+  //   setIsGeneratingAI(true);
+  //   try {
+  //     // Use the new AI API to generate a complete plan
+  //     const response = await aiAPI.generatePlan({
+  //       nameoftheplace: plan.nameoftheplace,
+  //       userPrompt: Generate comprehensive travel information for ${plan.nameoftheplace},
+  //       numberOfDays: 3, // Default to 3 days
+  //       budgetRange: 'medium',
+  //       travelStyle: 'balanced',
+  //       interests: []
+  //     });
 
-      if (response.success) {
-        const aiData = response.data.plan;
+  //     if (response.success) {
+  //       const aiData = response.data.plan;
         
-        // Update plan with AI data
-        const updatedPlan = {
-          ...plan,
-          abouttheplace: aiData.abouttheplace || plan.abouttheplace,
-          besttimetovisit: aiData.besttimetovisit,
-          adventuresactivitiestodo: aiData.adventuresactivitiestodo,
-          localcuisinerecommendations: aiData.localcuisinerecommendations,
-          packingchecklist: aiData.packingchecklist,
-          topplacestovisit: aiData.topplacestovisit,
-          itinerary: aiData.itinerary
-        };
+  //       // Update plan with AI data
+  //       const updatedPlan = {
+  //         ...plan,
+  //         abouttheplace: aiData.abouttheplace || plan.abouttheplace,
+  //         besttimetovisit: aiData.besttimetovisit,
+  //         adventuresactivitiestodo: aiData.adventuresactivitiestodo,
+  //         localcuisinerecommendations: aiData.localcuisinerecommendations,
+  //         packingchecklist: aiData.packingchecklist,
+  //         topplacestovisit: aiData.topplacestovisit,
+  //         itinerary: aiData.itinerary
+  //       };
 
-        setPlan(updatedPlan);
+  //       setPlan(updatedPlan);
         
-        // Update plan in database
-        try {
-          await plansAPI.updatePlan(planId, {
-            besttimetovisit: updatedPlan.besttimetovisit,
-            adventuresactivitiestodo: updatedPlan.adventuresactivitiestodo,
-            localcuisinerecommendations: updatedPlan.localcuisinerecommendations,
-            packingchecklist: updatedPlan.packingchecklist,
-            topplacestovisit: updatedPlan.topplacestovisit,
-            itinerary: updatedPlan.itinerary
-          });
-          console.log('Plan updated successfully in database');
-        } catch (updateError) {
-          console.error('Error updating plan in database:', updateError);
-        }
-      } else {
-        console.error('AI generation failed:', response.error);
-      }
+  //       // Update plan in database
+  //       try {
+  //         await plansAPI.updatePlan(planId, {
+  //           besttimetovisit: updatedPlan.besttimetovisit,
+  //           adventuresactivitiestodo: updatedPlan.adventuresactivitiestodo,
+  //           localcuisinerecommendations: updatedPlan.localcuisinerecommendations,
+  //           packingchecklist: updatedPlan.packingchecklist,
+  //           topplacestovisit: updatedPlan.topplacestovisit,
+  //           itinerary: updatedPlan.itinerary
+  //         });
+  //         console.log('Plan updated successfully in database');
+  //       } catch (updateError) {
+  //         console.error('Error updating plan in database:', updateError);
+  //       }
+  //     } else {
+  //       console.error('AI generation failed:', response.error);
+  //     }
       
-    } catch (error) {
-      console.error('Error generating AI content:', error);
-    } finally {
-      setIsGeneratingAI(false);
-    }
-  };
+  //   } catch (error) {
+  //     console.error('Error generating AI content:', error);
+  //   } finally {
+  //     setIsGeneratingAI(false);
+  //   }
+  // };
 
   const formatDateRange = (fromDate, toDate) => {
     if (!fromDate || !toDate) return 'Dates not set';
@@ -175,23 +177,23 @@ const PlanDetailPage = ({ isPublic = false }) => {
         return <AboutThePlace content={plan.abouttheplace} planId={planId} allowEdit={true} />;
       
       case 'besttimetovisit':
-        return <BestTimeToVisit content={plan.best_time_to_visit} planId={planId} allowEdit={true} />;
+        return <BestTimeToVisit content={plan.besttimetovisit} planId={planId} allowEdit={true} />;
       
       case 'adventuresactivitiestodo':
-        return <TopActivities activities={plan.top_adventure_activities || []} planId={planId} allowEdit={true} />;
-        case 'topplacestovisit':
-        return <EnhancedTopPlacesToVisit places={plan.top_places_to_visit || []} planId={planId} allowEdit={true} />;
-        case 'itinerary':
-        return <EnhancedItinerary itinerary={plan.itinerary || []} planId={planId} allowEdit={true} />;
+        return <TopActivities activities={plan.adventuresactivitiestodo || []} planId={planId} allowEdit={true} />;
+      case 'topplacestovisit':
+      return <EnhancedTopPlacesToVisit places={plan.topplacestovisit || []} planId={planId} allowEdit={true} />;
+      case 'itinerary':
+      return <EnhancedItinerary itinerary={plan.itinerary || []} planId={planId} allowEdit={true} />;
       
       case 'localcuisinerecommendations':
-        return <LocalCuisineRecommendations recommendations={plan.local_cuisine_recommendations || []} planId={planId} allowEdit={true} />;
+        return <LocalCuisineRecommendations recommendations={plan.localcuisinerecommendations || []} planId={planId} allowEdit={true} />;
       
       case 'packingchecklist':
-        return <PackingChecklist checklist={plan.packing_checklist || []} planId={planId} allowEdit={true} />;
+        return <PackingChecklist checklist={plan.packingchecklist || []} planId={planId} allowEdit={true} />;
       
       case 'weather':
-        return <Weather weatherInfo={plan.weather_info} planId={planId} allowEdit={true} />;
+        return <Weather weatherInfo={plan.besttimetovisit} planId={planId} allowEdit={true} />;
       
       case 'imagination':
         return (
@@ -287,7 +289,7 @@ const PlanDetailPage = ({ isPublic = false }) => {
   }
 
   const days = calculateDays(plan.fromdate, plan.todate);
-
+  // console.log('Plan details:', plan.data.plan);
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
       {/* Hero Section */}
@@ -458,7 +460,7 @@ const PlanDetailPage = ({ isPublic = false }) => {
                       <Button 
                         className="w-full" 
                         variant="outline" 
-                        onClick={generateWithAI}
+                        // onClick={generateWithAI}
                         disabled={isGeneratingAI}
                       >
                         <Wand2 className="w-4 h-4 mr-2" />
