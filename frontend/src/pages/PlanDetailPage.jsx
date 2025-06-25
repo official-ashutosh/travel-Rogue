@@ -88,24 +88,10 @@ const AboutSection = ({ plan, isPublic, editingSection, editingContent, setEditi
 );
 
 // Component for rendering Itinerary Section with improved structure
-const ItinerarySection = ({ 
-  plan, 
-  isPublic, 
-  editingSection, 
-  editingItineraryContent, 
-  handleEditSection, 
-  handleSaveSection, 
-  handleCancelEdit, 
-  saveLoading,
-  addItineraryDay,
-  updateItineraryDay,
-  addItineraryActivity,
-  updateItineraryActivity,
-  removeItineraryActivity,
-  removeItineraryDay
-}) => {
-  const renderTimeSlot = (timeSlot, dayIndex, slotName) => {
-    if (!timeSlot || (Array.isArray(timeSlot) && timeSlot.length === 0)) {
+const ItinerarySection = ({ plan }) => {
+  // console.log("Itinerary:", plan.itinerary.length);
+  const renderTimeSlot = (activities, slotName) => {
+    if (!activities || activities.length === 0) {
       return (
         <div className="text-sm text-slate-500 dark:text-slate-400 italic p-2">
           No {slotName.toLowerCase()} activities planned
@@ -113,17 +99,18 @@ const ItinerarySection = ({
       );
     }
 
-    const activities = Array.isArray(timeSlot) ? timeSlot : [timeSlot];
-    
     return (
       <div className="space-y-2">
-        {activities.map((activity, actIndex) => (
+        {activities.map((activity, idx) => (
           <div
-            key={actIndex}
+            key={idx}
             className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300 p-3 bg-gradient-to-r from-indigo-50/50 to-blue-50/50 dark:from-indigo-950/30 dark:to-blue-950/30 rounded-lg border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm"
           >
             <div className="w-1.5 h-1.5 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-full flex-shrink-0 mt-2"></div>
-            <span>{activity}</span>
+            <div>
+              <p className="font-medium">{activity.itineraryItem}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{activity.briefDescription}</p>
+            </div>
           </div>
         ))}
       </div>
@@ -140,144 +127,17 @@ const ItinerarySection = ({
             </div>
             Daily Itinerary
           </CardTitle>
-          {!isPublic && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleEditSection('itinerary')}
-              className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
-            >
-              <Edit className="w-4 h-4 mr-1" />
-              Edit
-            </Button>
-          )}
         </div>
       </CardHeader>
       <CardContent className="p-6">
-        {editingSection === 'itinerary' ? (
-          <div className="space-y-4">
-            <div className="space-y-6">
-              {editingItineraryContent.map((day, dayIndex) => (
-                <div key={dayIndex} className="border border-slate-200 dark:border-gray-600 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-xl flex items-center justify-center text-sm font-semibold">
-                        {day.day}
-                      </div>
-                      <input
-                        type="text"
-                        value={day.title || ''}
-                        onChange={(e) => updateItineraryDay(dayIndex, 'title', e.target.value)}
-                        className="flex-1 p-2 border border-slate-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="Day title..."
-                      />
-                    </div>
-                    <Button
-                      onClick={() => removeItineraryDay(dayIndex)}
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  
-                  {/* Time-based activity sections */}
-                  <div className="space-y-4 ml-11">
-                    {['morning', 'afternoon', 'evening'].map((timeSlot) => (
-                      <div key={timeSlot} className="border border-slate-100 dark:border-gray-700 rounded-lg p-3">
-                        <h4 className="font-medium text-slate-800 dark:text-slate-200 mb-2 capitalize">
-                          {timeSlot}
-                        </h4>
-                        <div className="space-y-2">
-                          {(day[timeSlot] && Array.isArray(day[timeSlot]) ? day[timeSlot] : []).map((activity, activityIndex) => (
-                            <div key={activityIndex} className="flex gap-2">
-                              <input
-                                type="text"
-                                value={activity || ''}
-                                onChange={(e) => {
-                                  const newItinerary = [...editingItineraryContent];
-                                  if (!Array.isArray(newItinerary[dayIndex][timeSlot])) {
-                                    newItinerary[dayIndex][timeSlot] = [];
-                                  }
-                                  newItinerary[dayIndex][timeSlot][activityIndex] = e.target.value;
-                                  // Update using the existing function
-                                  updateItineraryDay(dayIndex, timeSlot, newItinerary[dayIndex][timeSlot]);
-                                }}
-                                className="flex-1 p-2 border border-slate-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                                placeholder={`${timeSlot} activity...`}
-                              />
-                              <Button
-                                onClick={() => {
-                                  const newItinerary = [...editingItineraryContent];
-                                  if (Array.isArray(newItinerary[dayIndex][timeSlot])) {
-                                    newItinerary[dayIndex][timeSlot] = newItinerary[dayIndex][timeSlot].filter((_, i) => i !== activityIndex);
-                                    updateItineraryDay(dayIndex, timeSlot, newItinerary[dayIndex][timeSlot]);
-                                  }
-                                }}
-                                variant="outline"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          ))}
-                          <Button
-                            onClick={() => {
-                              const newItinerary = [...editingItineraryContent];
-                              if (!Array.isArray(newItinerary[dayIndex][timeSlot])) {
-                                newItinerary[dayIndex][timeSlot] = [];
-                              }
-                              newItinerary[dayIndex][timeSlot].push("");
-                              updateItineraryDay(dayIndex, timeSlot, newItinerary[dayIndex][timeSlot]);
-                            }}
-                            variant="outline"
-                            size="sm"
-                            className="w-full border-dashed border-indigo-300 text-indigo-600 hover:bg-indigo-50"
-                          >
-                            <Plus className="w-3 h-3 mr-2" />
-                            Add {timeSlot} Activity
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <Button
-              onClick={addItineraryDay}
-              variant="outline"
-              className="w-full border-dashed border-indigo-300 text-indigo-600 hover:bg-indigo-50"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Day
-            </Button>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSaveSection}
-                disabled={saveLoading}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                {saveLoading ? "Saving..." : "Save"}
-              </Button>
-              <Button
-                onClick={handleCancelEdit}
-                variant="outline"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        ) : plan.itinerary?.length > 0 ? (
+        {plan.itinerary?.length > 0 ? (
           <div className="space-y-6">
             {plan.itinerary.map((day, index) => (
               <div key={index} className="relative">
                 <div className="flex items-start gap-4">
                   <div className="flex flex-col items-center">
                     <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-xl flex items-center justify-center text-sm font-semibold shadow-md">
-                      {day.day}
+                      {index + 1}
                     </div>
                     {index < plan.itinerary.length - 1 && (
                       <div className="w-px h-12 bg-gradient-to-b from-indigo-300 to-blue-300 dark:from-indigo-600 dark:to-blue-600 mt-2"></div>
@@ -285,39 +145,21 @@ const ItinerarySection = ({
                   </div>
                   <div className="flex-1 pb-4">
                     <h3 className="font-semibold text-slate-900 dark:text-white mb-4">{day.title}</h3>
-                    
-                    {/* Time-based activity display */}
                     <div className="space-y-4">
-                      {['morning', 'afternoon', 'evening'].map((timeSlot) => (
-                        day[timeSlot] && (
-                          <div key={timeSlot} className="bg-gradient-to-r from-indigo-50/30 to-blue-50/30 dark:from-indigo-950/20 dark:to-blue-950/20 rounded-lg p-3 border border-indigo-100/50 dark:border-indigo-800/30">
+                      {['morning', 'afternoon', 'evening'].map((slot) => (
+                        day.activities?.[slot] && (
+                          <div
+                            key={slot}
+                            className="bg-gradient-to-r from-indigo-50/30 to-blue-50/30 dark:from-indigo-950/20 dark:to-blue-950/20 rounded-lg p-3 border border-indigo-100/50 dark:border-indigo-800/30"
+                          >
                             <h4 className="font-medium text-indigo-700 dark:text-indigo-300 mb-2 capitalize flex items-center gap-2">
                               <div className="w-3 h-3 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-full"></div>
-                              {timeSlot}
+                              {slot}
                             </h4>
-                            {renderTimeSlot(day[timeSlot], index, timeSlot)}
+                            {renderTimeSlot(day.activities[slot], slot)}
                           </div>
                         )
                       ))}
-                      
-                      {/* Fallback for activities array (legacy format) */}
-                      {!day.morning && !day.afternoon && !day.evening && day.activities && (
-                        <div className="space-y-2">
-                          {(day.activities && Array.isArray(day.activities)) ? day.activities.map((activity, actIndex) => (
-                            <div
-                              key={actIndex}
-                              className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 p-3 bg-gradient-to-r from-indigo-50/50 to-blue-50/50 dark:from-indigo-950/30 dark:to-blue-950/30 rounded-lg border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm"
-                            >
-                              <div className="w-1.5 h-1.5 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-full flex-shrink-0"></div>
-                              {activity}
-                            </div>
-                          )) : (
-                            <div className="text-sm text-slate-600 dark:text-slate-400 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                              No activities available for this day
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -331,6 +173,7 @@ const ItinerarySection = ({
     </Card>
   );
 };
+
 
 // Component for rendering Local Cuisine Section
 const LocalCuisineSection = ({ plan, isPublic, editingSection, editingListContent, handleEditSection, handleSaveSection, handleCancelEdit, saveLoading, addListItem, updateListItem, removeListItem }) => (
@@ -614,61 +457,7 @@ const PlanDetailPage = ({ isPublic = false }) => {
     const newList = editingListContent.filter((_, i) => i !== index);
     setEditingListContent(newList);
   };
-
-  const addItineraryDay = () => {
-    setEditingItineraryContent([
-      ...editingItineraryContent,
-      { 
-        day: editingItineraryContent.length + 1, 
-        title: "", 
-        morning: [],
-        afternoon: [],
-        evening: []
-      }
-    ]);
-  };
-
-  const updateItineraryDay = (dayIndex, field, value) => {
-    const newItinerary = [...editingItineraryContent];
-    newItinerary[dayIndex] = { ...newItinerary[dayIndex], [field]: value };
-    setEditingItineraryContent(newItinerary);
-  };
-
-  const addItineraryActivity = (dayIndex) => {
-    const newItinerary = [...editingItineraryContent];
-    if (!Array.isArray(newItinerary[dayIndex].activities)) {
-      newItinerary[dayIndex].activities = [];
-    }
-    newItinerary[dayIndex].activities.push("");
-    setEditingItineraryContent(newItinerary);
-  };
-
-  const updateItineraryActivity = (dayIndex, activityIndex, value) => {
-    const newItinerary = [...editingItineraryContent];
-    if (!Array.isArray(newItinerary[dayIndex].activities)) {
-      newItinerary[dayIndex].activities = [];
-    }
-    newItinerary[dayIndex].activities[activityIndex] = value;
-    setEditingItineraryContent(newItinerary);
-  };
-
-  const removeItineraryActivity = (dayIndex, activityIndex) => {
-    const newItinerary = [...editingItineraryContent];
-    if (Array.isArray(newItinerary[dayIndex].activities)) {
-      newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.filter((_, i) => i !== activityIndex);
-    }
-    setEditingItineraryContent(newItinerary);
-  };
-
-  const removeItineraryDay = (dayIndex) => {
-    const newItinerary = editingItineraryContent.filter((_, i) => i !== dayIndex);
-    // Renumber the days
-    newItinerary.forEach((day, index) => {
-      day.day = index + 1;
-    });
-    setEditingItineraryContent(newItinerary);
-  };
-
+  
   useEffect(() => {
     const fetchPlan = async () => {
       try {
@@ -1097,24 +886,13 @@ const PlanDetailPage = ({ isPublic = false }) => {
       case "itinerary":
         return (
           <div className="space-y-6">
-            <ItinerarySection 
+            <ItinerarySection
               plan={plan}
               isPublic={isPublic}
-              editingSection={editingSection}
-              editingItineraryContent={editingItineraryContent}
-              handleEditSection={handleEditSection}
-              handleSaveSection={handleSaveSection}
-              handleCancelEdit={handleCancelEdit}
-              saveLoading={saveLoading}
-              addItineraryDay={addItineraryDay}
-              updateItineraryDay={updateItineraryDay}
-              addItineraryActivity={addItineraryActivity}
-              updateItineraryActivity={updateItineraryActivity}
-              removeItineraryActivity={removeItineraryActivity}
-              removeItineraryDay={removeItineraryDay}
             />
           </div>
-        )
+        );
+
 
       case "localcuisinerecommendations":
         return (

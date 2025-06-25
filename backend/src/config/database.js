@@ -10,10 +10,7 @@ const connectDB = async () => {
     console.log(`📍 URI: ${mongoUri}`);
     console.log('═'.repeat(55));
 
-    const conn = await mongoose.connect(mongoUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    const conn = await mongoose.connect(mongoUri);
     
     console.log('✅ MongoDB connected successfully!');
     console.log(`🗄️  Database: ${conn.connection.db.databaseName}`);

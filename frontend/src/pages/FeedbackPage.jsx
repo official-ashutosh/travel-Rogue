@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card.jsx';
 import { Button } from '../components/ui/Button.jsx';
 import { Badge } from '../components/ui/Badge.jsx';
@@ -10,10 +10,12 @@ import {
   Plus
 } from 'lucide-react';
 import { useFeedback } from '../hooks/useApiHooks.js';
+const { feedbackAPI } = require('../lib/api.js');
 
 const FeedbackPage = () => {
   const {
     feedback,
+    setFeedback,
     loading,
     error,
     submitFeedback
@@ -31,7 +33,6 @@ const FeedbackPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await submitFeedback(formData);
-    
     if (result.success) {
       setShowForm(false);
       setFormData({
@@ -42,6 +43,20 @@ const FeedbackPage = () => {
       });
     }
   };
+  useEffect(() => {
+    // fetch feeback of user from the backend
+    const fetchFeedback = async () => {
+      try {
+        const res = await feedbackAPI.getUserFeedback();
+        console.log('Fetched feedback:', res.data.data.feedback);
+        setFeedback(res.data.data.feedback);
+      } catch (err) {
+        console.error('Error fetching feedback:', err);
+      }
+    };
+
+    fetchFeedback();
+  }, []);
 
   const filteredFeedback = feedback.filter(item => {
     if (filter === 'my') return item.is_mine;
