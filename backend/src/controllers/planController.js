@@ -397,6 +397,110 @@ const togglePlanVisibility = async (req, res, next) => {
     next(error);  }
 };
 
+// Admin functions
+const getAllPlans = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 50, search, status } = req.query;
+    const { skip, limit: limitNum } = paginate(page, limit);
+
+    let query = {};
+    if (search) {
+      query = {
+        $or: [
+          { nameoftheplace: { $regex: search, $options: 'i' } },
+          { abouttheplace: { $regex: search, $options: 'i' } }
+        ]
+      };
+    }
+
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    const plans = await Plan.find(query)
+      .populate('userId', 'firstName lastName email')
+      .skip(skip)
+      .limit(limitNum)
+      .sort({ createdAt: -1 });
+
+    const total = await Plan.countDocuments(query);
+
+    res.json(
+      createResponse('success', 'Plans retrieved successfully', {
+        plans,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(total / limitNum),
+          totalPlans: total,
+          hasNext: skip + limitNum < total,
+          hasPrev: page > 1
+        }
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updatePlanStatus = async (req, res, next) => {
+  try {
+    const { planId } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ['pending', 'published', 'rejected', 'featured'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json(
+        createResponse('error', 'Invalid status. Must be one of: pending, published, rejected, featured')
+      );
+    }
+
+    const plan = await Plan.findById(planId);
+    if (!plan) {
+      return res.status(404).json(
+        createResponse('error', 'Plan not found')
+      );
+    }
+
+    plan.status = status;
+    if (status === 'published' || status === 'featured') {
+      plan.isPublic = true;
+    }
+    await plan.save();
+
+    res.json(
+      createResponse('success', `Plan status updated to ${status}`, {
+        plan
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deletePlanAdmin = async (req, res, next) => {
+  try {
+    const { planId } = req.params;
+
+    const plan = await Plan.findById(planId);
+    if (!plan) {
+      return res.status(404).json(
+        createResponse('error', 'Plan not found')
+      );
+    }
+
+    // Delete associated data
+    await Access.deleteMany({ planId });
+    await PlanSettings.deleteMany({ planId });
+    await Plan.findByIdAndDelete(planId);
+
+    res.json(
+      createResponse('success', 'Plan deleted successfully')
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createPlan,
   getUserPlans,
@@ -404,5 +508,9 @@ module.exports = {
   updatePlan,
   deletePlan,
   getPublicPlans,
-  togglePlanVisibility
+  togglePlanVisibility,
+  // Admin functions
+  getAllPlans,
+  updatePlanStatus,
+  deletePlanAdmin
 };

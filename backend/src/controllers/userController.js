@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const Plan = require('../models/Plan');
+const Access = require('../models/Access');
 const { createResponse, paginate } = require('../utils/helpers');
 
 // Get user profile
@@ -238,6 +240,66 @@ const deleteAccount = async (req, res, next) => {
   }
 };
 
+// Admin function to update user status
+const updateUserStatus = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ['active', 'suspended', 'inactive'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json(
+        createResponse('error', 'Invalid status. Must be one of: active, suspended, inactive')
+      );
+    }
+
+    const user = await User.findById(userId).select('-password');
+    if (!user) {
+      return res.status(404).json(
+        createResponse('error', 'User not found')
+      );
+    }
+
+    user.status = status;
+    await user.save();
+
+    res.json(
+      createResponse('success', `User status updated to ${status}`, {
+        user
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Admin function to delete user
+const deleteUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json(
+        createResponse('error', 'User not found')
+      );
+    }
+
+    // Delete user's data
+    await Promise.all([
+      Plan.deleteMany({ userId }),
+      Access.deleteMany({ userId }),
+      User.findByIdAndDelete(userId)
+    ]);
+
+    res.json(
+      createResponse('success', 'User deleted successfully')
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -246,5 +308,8 @@ module.exports = {
   addCredits,
   getAllUsers,
   deactivateAccount,
-  deleteAccount
+  deleteAccount,
+  // Admin functions
+  updateUserStatus,
+  deleteUser
 };

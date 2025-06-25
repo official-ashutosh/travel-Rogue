@@ -15,9 +15,7 @@ const PackingChecklist = ({
 
   const handleSave = async (updatedChecklist) => {
     try {
-      // TODO: Replace with actual API call
       console.log('Saving packing checklist:', updatedChecklist);
-      // await api.put(`/plans/${planId}/packing`, { checklist: updatedChecklist });
     } catch (error) {
       console.error('Failed to save packing checklist:', error);
     }

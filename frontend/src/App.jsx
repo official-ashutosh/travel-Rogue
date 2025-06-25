@@ -2,8 +2,6 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext.jsx';
 import Header from './components/Header.jsx';
-
-// Import pages
 import LoginPage from './pages/LoginPage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
@@ -34,11 +32,9 @@ function App() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Routes>        {/* Public routes */}
+      <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/community-plans" element={<CommunityPlansPage />} />
-        
-        {/* Auth routes */}
         <Route 
           path="/login" 
           element={user ? (user.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />) : <LoginPage />} 
@@ -55,57 +51,47 @@ function App() {
           path="/reset-password/:token" 
           element={user ? (user.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />) : <ResetPasswordPage />} 
         />
-        
-        {/* Protected routes */}
         <Route 
           path="/dashboard" 
-          element={user ? <DashboardPage /> : <Navigate to="/login" replace />} 
+          element={user ? (user.role === 'admin' ? <Navigate to="/admin" replace /> : <DashboardPage />) : <Navigate to="/login" replace />} 
         />
         <Route 
           path="/plans/new" 
-          element={user ? <NewPlanPage /> : <Navigate to="/login" replace />} 
+          element={user?.role === 'user' ? <NewPlanPage /> : user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/login" replace />} 
+        />
+        <Route 
+          path="/plans/:planId/edit" 
+          element={user?.role === 'user' ? <NewPlanPage isEdit={true} /> : user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/login" replace />} 
         />        
         <Route 
           path="/plans/:planId" 
-          element={user ? <PlanDetailPage /> : <Navigate to="/login" replace />} 
+          element={user ? (user.role === 'admin' ? <Navigate to="/admin" replace /> : <PlanDetailPage />) : <Navigate to="/login" replace />} 
         />
-        
-        {/* Community Plan Details Route */}
         <Route 
           path="/plans/:planId/community-plan" 
           element={<PlanDetailPage isPublic={true} />} 
         />
-        
-        {/* Expenses Routes */}
         <Route 
           path="/expenses" 
-          element={user ? <ExpensesPage /> : <Navigate to="/login" replace />} 
+          element={user?.role === 'user' ? <ExpensesPage /> : user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/login" replace />} 
         />
         <Route 
           path="/plans/:planId/expenses" 
-          element={user ? <ExpensesPage /> : <Navigate to="/login" replace />} 
+          element={user?.role === 'user' ? <ExpensesPage /> : user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/login" replace />} 
         />
-        
-        {/* Other Protected Routes */}
         <Route 
           path="/payments" 
-          element={user ? <PaymentsPage /> : <Navigate to="/login" replace />} 
+          element={user?.role === 'user' ? <PaymentsPage /> : user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/login" replace />} 
         />
         <Route 
           path="/feedback" 
-          element={user ? <FeedbackPage /> : <Navigate to="/login" replace />} 
+          element={user?.role === 'user' ? <FeedbackPage /> : user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/login" replace />} 
         />
-        
-        {/* Invite Routes */}
         <Route path="/invite/:token" element={<InvitePage />} />
-        
-        {/* Admin Routes */}
         <Route 
           path="/admin" 
           element={user?.role === 'admin' ? <AdminPage /> : <Navigate to="/dashboard" replace />} 
         />
-        
-        {/* Catch all route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

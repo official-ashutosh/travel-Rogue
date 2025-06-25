@@ -23,8 +23,8 @@ const UnifiedPlanCard = ({
   plan, 
   isPublic = false, 
   viewMode = 'grid', 
-  showActions = false, // Default to false - only show on PlanDetailPage
-  showEditDelete = false, // Only show edit/delete for user-generated plans on PlanDetailPage
+  showActions = false,
+  showEditDelete = false,
   onEdit,
   onDelete,
   onShare
@@ -58,7 +58,6 @@ const UnifiedPlanCard = ({
     return diffDays;
   };
 
-  // Calculate duration from itinerary if dates aren't available
   const getDuration = () => {
     const fromDate = plan.fromdate || plan.fromDate || plan.startdate;
     const toDate = plan.todate || plan.toDate || plan.enddate;
@@ -67,7 +66,6 @@ const UnifiedPlanCard = ({
       return calculateDuration(fromDate, toDate);
     }
     
-    // For AI plans, try to get duration from itinerary length
     if (plan.itinerary && Array.isArray(plan.itinerary)) {
       return plan.itinerary.length;
     }
@@ -77,33 +75,28 @@ const UnifiedPlanCard = ({
 
   const duration = getDuration();
 
-  // Get budget - support multiple field names
   const getBudget = () => {
-    return plan.budget || plan.estimatedBudget || plan.totalBudget || null;
+    const budget = plan.budget || plan.estimatedBudget || plan.totalBudget;
+    return budget && typeof budget === 'number' ? budget : null;
   };
 
-  // Get travelers count - support multiple field names  
   const getTravelers = () => {
     return plan.travelers || plan.groupSize || plan.numberOfTravelers || null;
   };
 
-  // Get views count
   const getViews = () => {
     return plan.views || 0;
   };
 
-  // Get rating
   const getRating = () => {
     return plan.rating || null;
   };
 
-  // Get tags - create default tags for AI plans if none exist
   const getTags = () => {
     if (plan.tags && Array.isArray(plan.tags) && plan.tags.length > 0) {
       return plan.tags;
     }
     
-    // Generate default tags for AI plans
     if (plan.isGeneratedUsingAI) {
       const defaultTags = [];
       if (plan.adventuresactivitiestodo && plan.adventuresactivitiestodo.length > 0) {
@@ -133,14 +126,13 @@ const UnifiedPlanCard = ({
     if (onEdit) {
       onEdit(plan);
     } else {
-      navigate('/plans/new', { state: { editPlan: plan } });
+      navigate(`/plans/${plan.id || plan._id}/edit`);
     }
   };
 
   const handleDelete = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
     if (window.confirm('Are you sure you want to delete this plan?')) {
       try {
         setLoading(true);
@@ -148,8 +140,7 @@ const UnifiedPlanCard = ({
         if (onDelete) {
           onDelete(plan);
         } else {
-          // Refresh the page or update parent component
-          window.location.reload();
+          navigate('/dashboard?refresh=true');
         }
       } catch (error) {
         console.error('Error deleting plan:', error);
@@ -166,7 +157,6 @@ const UnifiedPlanCard = ({
     if (onShare) {
       onShare(plan);
     } else {
-      // Default share functionality
       if (navigator.share) {
         navigator.share({
           title: plan.nameoftheplace,
@@ -174,7 +164,6 @@ const UnifiedPlanCard = ({
           url: window.location.origin + `/plans/${plan.id || plan._id}`
         });
       } else {
-        // Fallback - copy to clipboard
         navigator.clipboard.writeText(window.location.origin + `/plans/${plan.id || plan._id}`);
         alert('Plan link copied to clipboard!');
       }
@@ -182,7 +171,7 @@ const UnifiedPlanCard = ({
   };
 
   const linkTo = isPublic ? `/plans/${plan.id || plan._id}/community-plan` : `/plans/${plan.id || plan._id}`;
-  const navigationState = { plan }; // Pass plan data through router state
+  const navigationState = { plan };
 
   if (viewMode === 'list') {
     return (
@@ -268,16 +257,14 @@ const UnifiedPlanCard = ({
                   {/* Edit/Delete buttons for list view */}
                   {showEditDelete && (
                     <div className="flex items-center gap-1">
-                      {!plan.isGeneratedUsingAI && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={handleEdit}
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 p-1"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      )}
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={handleEdit}
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 p-1"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
                       <Button 
                         variant="ghost" 
                         size="sm" 
@@ -364,16 +351,14 @@ const UnifiedPlanCard = ({
                     
                     {showMenu && (
                       <div className="absolute right-0 top-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
-                        {/* Edit button - only for non-AI plans */}
-                        {!plan.isGeneratedUsingAI && (
-                          <button
-                            onClick={handleEdit}
-                            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                          >
-                            <Edit className="w-4 h-4" />
-                            Edit
-                          </button>
-                        )}
+                        {/* Edit button - show for all user's own plans */}
+                        <button
+                          onClick={handleEdit}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Edit
+                        </button>
                         <button
                           onClick={handleShare}
                           className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useNavigate, useParams, useLocation } from "react-router-dom"
 import {
   MapPin,
   Calendar,
@@ -24,9 +24,12 @@ import api from "../lib/api.js"
 import LocationAutoComplete from "../components/LocationAutoComplete.jsx"
 import { ACTIVITY_PREFERENCES, COMPANION_PREFERENCES } from "../lib/constants.js"
 
-const NewPlanPage = () => {
+const NewPlanPage = ({ isEdit = false }) => {
   const navigate = useNavigate()
+  const { planId } = useParams()
+  const location = useLocation()
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(isEdit)
   const [selectedActivities, setSelectedActivities] = useState([])
 
   const [formData, setFormData] = useState({
@@ -49,6 +52,53 @@ const NewPlanPage = () => {
     id: companion.id,
     label: companion.displayName,
   }))
+
+  // Load existing plan data when editing
+  useEffect(() => {
+    const loadPlanData = async () => {
+      if (isEdit && planId) {
+        try {
+          setInitialLoading(true);
+          const response = await api.get(`/plans/${planId}`);
+          const plan = response.data.data;
+
+          // Pre-fill form with existing plan data
+          setFormData({
+            nameoftheplace: plan.nameoftheplace || plan.destination || "",
+            fromdate: plan.startDate ? plan.startDate.split('T')[0] : "",
+            todate: plan.endDate ? plan.endDate.split('T')[0] : "",
+            budget: plan.budgetRange ? plan.budgetRange.replace('$', '') : "",
+            abouttheplace: plan.userPrompt || plan.description || "",
+            companion: plan.travelStyle || "",
+            activityPreferences: plan.interests || [],
+          });
+
+          // Set selected activities
+          setSelectedActivities(plan.interests || []);
+        } catch (error) {
+          console.error('Error loading plan:', error);
+          alert('Failed to load plan data. Please try again.');
+          navigate('/dashboard');
+        } finally {
+          setInitialLoading(false);
+        }
+      }
+    };
+
+    loadPlanData();
+  }, [isEdit, planId, navigate]);
+
+  // Focus on specific section if passed through state
+  useEffect(() => {
+    if (location.state?.focusSection && !initialLoading) {
+      const section = location.state.focusSection;
+      const element = document.getElementById(section);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.focus();
+      }
+    }
+  }, [location.state, initialLoading]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -86,10 +136,9 @@ const NewPlanPage = () => {
     return true
   }
 
-  const handleCreatePlan = async (withAI = false) => {
-    if (!validateForm()) return
-
-    setLoading(true)
+  const handleSavePlan = async (withAI = false) => {
+    if (!validateForm()) return;
+    setLoading(true);
     try {
       const planData = {
         nameoftheplace: formData.nameoftheplace,
@@ -104,22 +153,25 @@ const NewPlanPage = () => {
           formData.fromdate && formData.todate
             ? Math.ceil((new Date(formData.todate) - new Date(formData.fromdate)) / (1000 * 60 * 60 * 24))
             : null,
+      };
+      let response;
+      if (isEdit && planId) {
+        response = await api.put(`/plans/${planId}`, planData);
+      } else {
+        response = await api.post("/plans", planData);
       }
-
-      const response = await api.post("/plans", planData)
-
       if (response.data.status === "success") {
         setTimeout(() => {
-          navigate("/dashboard?refresh=true")
-        }, 500)
+          navigate("/dashboard?refresh=true");
+        }, 500);
       } else {
-        throw new Error(response.data.message || "Failed to create plan")
+        throw new Error(response.data.message || (isEdit ? "Failed to update plan" : "Failed to create plan"));
       }
     } catch (error) {
-      console.error("Error creating plan:", error)
-      alert(error.response?.data?.message || error.message || "Failed to create plan. Please try again.")
+      console.error(isEdit ? "Error updating plan:" : "Error creating plan:", error);
+      alert(error.response?.data?.message || error.message || (isEdit ? "Failed to update plan. Please try again." : "Failed to create plan. Please try again."));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -144,6 +196,18 @@ const NewPlanPage = () => {
     },
   ]
 
+  // Show loading screen while loading plan data for editing
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-blue-950 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-slate-600 dark:text-slate-400">Loading plan data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-blue-950 relative overflow-hidden">
       {/* Background Elements */}
@@ -166,19 +230,21 @@ const NewPlanPage = () => {
 
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium mb-6 border border-blue-200/50 dark:border-blue-800/30 backdrop-blur-sm">
             <Sparkles className="w-4 h-4" />
-            Create Your Dream Adventure
+            {isEdit ? 'Edit Your Adventure' : 'Create Your Dream Adventure'}
           </div>
 
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-4 tracking-tight">
-            Plan Your Next
+            {isEdit ? 'Edit Your' : 'Plan Your Next'}
             <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 dark:from-blue-400 dark:via-purple-400 dark:to-indigo-400 bg-clip-text text-transparent">
               Extraordinary Adventure
             </span>
           </h1>
 
           <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-4xl mx-auto">
-            Whether you're dreaming of a solo adventure, romantic getaway, or family vacation, our AI-powered travel
-            planner will help you create the perfect itinerary.
+            {isEdit 
+              ? 'Update your travel plans and make them even better with our AI-powered suggestions.'
+              : 'Whether you\'re dreaming of a solo adventure, romantic getaway, or family vacation, our AI-powered travel planner will help you create the perfect itinerary.'
+            }
           </p>
         </div>
 
@@ -349,6 +415,7 @@ const NewPlanPage = () => {
                     Tell us about your trip (Optional)
                   </label>
                   <textarea
+                    id="about"
                     placeholder="What kind of experience are you looking for? Any specific requirements or preferences?"
                     value={formData.abouttheplace}
                     onChange={(e) => handleInputChange("abouttheplace", e.target.value)}
@@ -378,7 +445,7 @@ const NewPlanPage = () => {
             {/* Action Buttons - Full Width */}
             <div className="flex flex-col sm:flex-row gap-4 pt-8 mt-8 border-t border-slate-200/50 dark:border-gray-700/50">
               <Button
-                onClick={() => handleCreatePlan(false)}
+                onClick={() => handleSavePlan(false)}
                 disabled={loading}
                 className="flex-1 h-14 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-700 hover:via-teal-700 hover:to-cyan-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-0 group relative overflow-hidden"
               >
@@ -388,18 +455,18 @@ const NewPlanPage = () => {
                 {loading ? (
                   <div className="flex items-center gap-2 relative z-10">
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Creating Plan...</span>
+                    <span>{isEdit ? 'Updating Plan...' : 'Creating Plan...'}</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 relative z-10">
                     <Plus className="w-5 h-5" />
-                    <span className="text-sm md:text-base">Create Manual Plan</span>
+                    <span className="text-sm md:text-base">{isEdit ? 'Update Manual Plan' : 'Create Manual Plan'}</span>
                   </div>
                 )}
               </Button>
 
               <Button
-                onClick={() => handleCreatePlan(true)}
+                onClick={() => handleSavePlan(true)}
                 disabled={loading}
                 className="flex-1 h-14 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-0 group relative overflow-hidden"
               >
@@ -409,12 +476,12 @@ const NewPlanPage = () => {
                 {loading ? (
                   <div className="flex items-center gap-2 relative z-10">
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Generating AI Plan...</span>
+                    <span>{isEdit ? 'Updating AI Plan...' : 'Generating AI Plan...'}</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 relative z-10">
                     <Wand2 className="w-5 h-5" />
-                    <span className="text-sm md:text-base">Generate AI Plan</span>
+                    <span className="text-sm md:text-base">{isEdit ? 'Update AI Plan' : 'Generate AI Plan'}</span>
                   </div>
                 )}
               </Button>

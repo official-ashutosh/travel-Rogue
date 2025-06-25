@@ -16,7 +16,8 @@ import {
   LogOut
 } from 'lucide-react';
 
-const Header = () => {  const { isAuthenticated, user, logout } = useAuth();
+const Header = () => {
+  const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef(null);
@@ -42,34 +43,36 @@ const Header = () => {  const { isAuthenticated, user, logout } = useAuth();
   ];
 
   const userMenuItems = [
-    { 
-      icon: User, 
-      label: 'Dashboard', 
-      href: '/dashboard' 
-    },
-    { 
-      icon: DollarSign, 
-      label: 'Expenses', 
-      href: '/expenses' 
-    },
-    { 
-      icon: CreditCard, 
-      label: 'Payments', 
-      href: '/payments' 
-    },
-    { 
-      icon: MessageSquare, 
-      label: 'Feedback', 
-      href: '/feedback' 
-    },
-    { 
-      icon: UserPlus, 
-      label: 'Invites', 
-      href: '/invite' 
-    },
+    ...(user?.role === 'user' ? [
+      { 
+        icon: User, 
+        label: 'Dashboard', 
+        href: '/dashboard' 
+      },
+      { 
+        icon: DollarSign, 
+        label: 'Expenses', 
+        href: '/expenses' 
+      },
+      { 
+        icon: CreditCard, 
+        label: 'Payments', 
+        href: '/payments' 
+      },
+      { 
+        icon: MessageSquare, 
+        label: 'Feedback', 
+        href: '/feedback' 
+      },
+      { 
+        icon: UserPlus, 
+        label: 'Invites', 
+        href: '/invite' 
+      }
+    ] : []),
     ...(user?.role === 'admin' ? [{ 
       icon: ShieldCheck, 
-      label: 'Admin', 
+      label: 'Admin Dashboard', 
       href: '/admin' 
     }] : [])
   ];

@@ -21,11 +21,462 @@ import {
   Building2,
   Navigation,
   CheckCircle,
+  Plus,
+  X,
 } from "lucide-react"
 import { Button } from "../components/ui/Button.jsx"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card.jsx"
 import { Badge } from "../components/ui/Badge.jsx"
 import { plansAPI } from "../lib/api.js"
+
+// Component for rendering About Section
+const AboutSection = ({ plan, isPublic, editingSection, editingContent, setEditingContent, handleEditSection, handleSaveSection, handleCancelEdit, saveLoading }) => (
+  <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+    <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/30 dark:to-purple-950/30">
+      <div className="flex items-center justify-between">
+        <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <Building2 className="w-4 h-4 text-white" />
+          </div>
+          About {plan.nameoftheplace}
+        </CardTitle>
+        {!isPublic && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleEditSection('abouttheplace')}
+            className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"
+          >
+            <Edit className="w-4 h-4 mr-1" />
+            Edit
+          </Button>
+        )}
+      </div>
+    </CardHeader>
+    <CardContent className="p-6">
+      {editingSection === 'abouttheplace' ? (
+        <div className="space-y-4">
+          <textarea
+            value={editingContent}
+            onChange={(e) => setEditingContent(e.target.value)}
+            className="w-full h-32 p-3 border border-slate-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            placeholder="Enter description about this place..."
+          />
+          <div className="flex gap-2">
+            <Button
+              onClick={handleSaveSection}
+              disabled={saveLoading}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {saveLoading ? "Saving..." : "Save"}
+            </Button>
+            <Button
+              onClick={handleCancelEdit}
+              variant="outline"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+          {plan.abouttheplace || "No description available for this destination."}
+        </p>
+      )}
+    </CardContent>
+  </Card>
+);
+
+// Component for rendering Itinerary Section with improved structure
+const ItinerarySection = ({ 
+  plan, 
+  isPublic, 
+  editingSection, 
+  editingItineraryContent, 
+  handleEditSection, 
+  handleSaveSection, 
+  handleCancelEdit, 
+  saveLoading,
+  addItineraryDay,
+  updateItineraryDay,
+  addItineraryActivity,
+  updateItineraryActivity,
+  removeItineraryActivity,
+  removeItineraryDay
+}) => {
+  const renderTimeSlot = (timeSlot, dayIndex, slotName) => {
+    if (!timeSlot || (Array.isArray(timeSlot) && timeSlot.length === 0)) {
+      return (
+        <div className="text-sm text-slate-500 dark:text-slate-400 italic p-2">
+          No {slotName.toLowerCase()} activities planned
+        </div>
+      );
+    }
+
+    const activities = Array.isArray(timeSlot) ? timeSlot : [timeSlot];
+    
+    return (
+      <div className="space-y-2">
+        {activities.map((activity, actIndex) => (
+          <div
+            key={actIndex}
+            className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300 p-3 bg-gradient-to-r from-indigo-50/50 to-blue-50/50 dark:from-indigo-950/30 dark:to-blue-950/30 rounded-lg border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm"
+          >
+            <div className="w-1.5 h-1.5 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-full flex-shrink-0 mt-2"></div>
+            <span>{activity}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+      <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-indigo-50/50 to-blue-50/50 dark:from-indigo-950/30 dark:to-blue-950/30">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg flex items-center justify-center">
+              <Clock className="w-4 h-4 text-white" />
+            </div>
+            Daily Itinerary
+          </CardTitle>
+          {!isPublic && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleEditSection('itinerary')}
+              className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+            >
+              <Edit className="w-4 h-4 mr-1" />
+              Edit
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="p-6">
+        {editingSection === 'itinerary' ? (
+          <div className="space-y-4">
+            <div className="space-y-6">
+              {editingItineraryContent.map((day, dayIndex) => (
+                <div key={dayIndex} className="border border-slate-200 dark:border-gray-600 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-xl flex items-center justify-center text-sm font-semibold">
+                        {day.day}
+                      </div>
+                      <input
+                        type="text"
+                        value={day.title || ''}
+                        onChange={(e) => updateItineraryDay(dayIndex, 'title', e.target.value)}
+                        className="flex-1 p-2 border border-slate-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        placeholder="Day title..."
+                      />
+                    </div>
+                    <Button
+                      onClick={() => removeItineraryDay(dayIndex)}
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  {/* Time-based activity sections */}
+                  <div className="space-y-4 ml-11">
+                    {['morning', 'afternoon', 'evening'].map((timeSlot) => (
+                      <div key={timeSlot} className="border border-slate-100 dark:border-gray-700 rounded-lg p-3">
+                        <h4 className="font-medium text-slate-800 dark:text-slate-200 mb-2 capitalize">
+                          {timeSlot}
+                        </h4>
+                        <div className="space-y-2">
+                          {(day[timeSlot] && Array.isArray(day[timeSlot]) ? day[timeSlot] : []).map((activity, activityIndex) => (
+                            <div key={activityIndex} className="flex gap-2">
+                              <input
+                                type="text"
+                                value={activity || ''}
+                                onChange={(e) => {
+                                  const newItinerary = [...editingItineraryContent];
+                                  if (!Array.isArray(newItinerary[dayIndex][timeSlot])) {
+                                    newItinerary[dayIndex][timeSlot] = [];
+                                  }
+                                  newItinerary[dayIndex][timeSlot][activityIndex] = e.target.value;
+                                  // Update using the existing function
+                                  updateItineraryDay(dayIndex, timeSlot, newItinerary[dayIndex][timeSlot]);
+                                }}
+                                className="flex-1 p-2 border border-slate-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                                placeholder={`${timeSlot} activity...`}
+                              />
+                              <Button
+                                onClick={() => {
+                                  const newItinerary = [...editingItineraryContent];
+                                  if (Array.isArray(newItinerary[dayIndex][timeSlot])) {
+                                    newItinerary[dayIndex][timeSlot] = newItinerary[dayIndex][timeSlot].filter((_, i) => i !== activityIndex);
+                                    updateItineraryDay(dayIndex, timeSlot, newItinerary[dayIndex][timeSlot]);
+                                  }
+                                }}
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            onClick={() => {
+                              const newItinerary = [...editingItineraryContent];
+                              if (!Array.isArray(newItinerary[dayIndex][timeSlot])) {
+                                newItinerary[dayIndex][timeSlot] = [];
+                              }
+                              newItinerary[dayIndex][timeSlot].push("");
+                              updateItineraryDay(dayIndex, timeSlot, newItinerary[dayIndex][timeSlot]);
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-dashed border-indigo-300 text-indigo-600 hover:bg-indigo-50"
+                          >
+                            <Plus className="w-3 h-3 mr-2" />
+                            Add {timeSlot} Activity
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Button
+              onClick={addItineraryDay}
+              variant="outline"
+              className="w-full border-dashed border-indigo-300 text-indigo-600 hover:bg-indigo-50"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Day
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSaveSection}
+                disabled={saveLoading}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {saveLoading ? "Saving..." : "Save"}
+              </Button>
+              <Button
+                onClick={handleCancelEdit}
+                variant="outline"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : plan.itinerary?.length > 0 ? (
+          <div className="space-y-6">
+            {plan.itinerary.map((day, index) => (
+              <div key={index} className="relative">
+                <div className="flex items-start gap-4">
+                  <div className="flex flex-col items-center">
+                    <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-xl flex items-center justify-center text-sm font-semibold shadow-md">
+                      {day.day}
+                    </div>
+                    {index < plan.itinerary.length - 1 && (
+                      <div className="w-px h-12 bg-gradient-to-b from-indigo-300 to-blue-300 dark:from-indigo-600 dark:to-blue-600 mt-2"></div>
+                    )}
+                  </div>
+                  <div className="flex-1 pb-4">
+                    <h3 className="font-semibold text-slate-900 dark:text-white mb-4">{day.title}</h3>
+                    
+                    {/* Time-based activity display */}
+                    <div className="space-y-4">
+                      {['morning', 'afternoon', 'evening'].map((timeSlot) => (
+                        day[timeSlot] && (
+                          <div key={timeSlot} className="bg-gradient-to-r from-indigo-50/30 to-blue-50/30 dark:from-indigo-950/20 dark:to-blue-950/20 rounded-lg p-3 border border-indigo-100/50 dark:border-indigo-800/30">
+                            <h4 className="font-medium text-indigo-700 dark:text-indigo-300 mb-2 capitalize flex items-center gap-2">
+                              <div className="w-3 h-3 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-full"></div>
+                              {timeSlot}
+                            </h4>
+                            {renderTimeSlot(day[timeSlot], index, timeSlot)}
+                          </div>
+                        )
+                      ))}
+                      
+                      {/* Fallback for activities array (legacy format) */}
+                      {!day.morning && !day.afternoon && !day.evening && day.activities && (
+                        <div className="space-y-2">
+                          {(day.activities && Array.isArray(day.activities)) ? day.activities.map((activity, actIndex) => (
+                            <div
+                              key={actIndex}
+                              className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 p-3 bg-gradient-to-r from-indigo-50/50 to-blue-50/50 dark:from-indigo-950/30 dark:to-blue-950/30 rounded-lg border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm"
+                            >
+                              <div className="w-1.5 h-1.5 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-full flex-shrink-0"></div>
+                              {activity}
+                            </div>
+                          )) : (
+                            <div className="text-sm text-slate-600 dark:text-slate-400 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                              No activities available for this day
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-slate-500 text-center py-8">No itinerary available.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// Component for rendering Local Cuisine Section
+const LocalCuisineSection = ({ plan, isPublic, editingSection, editingListContent, handleEditSection, handleSaveSection, handleCancelEdit, saveLoading, addListItem, updateListItem, removeListItem }) => (
+  <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
+    <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/30">
+      <div className="flex items-center justify-between">
+        <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+          <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
+            <ChefHat className="w-4 h-4 text-white" />
+          </div>
+          Local Cuisine Recommendations
+        </CardTitle>
+        {!isPublic && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleEditSection('localcuisinerecommendations')}
+            className="text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400"
+          >
+            <Edit className="w-4 h-4 mr-1" />
+            Edit
+          </Button>
+        )}
+      </div>
+    </CardHeader>
+    <CardContent className="p-6">
+      {editingSection === 'localcuisinerecommendations' ? (
+        <div className="space-y-4">
+          <div className="space-y-3">
+            {editingListContent.map((cuisine, index) => (
+              <div key={index} className="border border-slate-200 dark:border-gray-600 rounded-lg p-4 space-y-3">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={typeof cuisine === 'object' ? cuisine.dish || '' : cuisine}
+                    onChange={(e) => {
+                      const newCuisine = typeof cuisine === 'object' 
+                        ? { ...cuisine, dish: e.target.value }
+                        : { dish: e.target.value, description: '', price: '' };
+                      updateListItem(index, newCuisine);
+                    }}
+                    className="flex-1 p-3 border border-slate-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    placeholder="Dish name..."
+                  />
+                  <input
+                    type="text"
+                    value={typeof cuisine === 'object' ? cuisine.price || '' : ''}
+                    onChange={(e) => {
+                      const newCuisine = typeof cuisine === 'object' 
+                        ? { ...cuisine, price: e.target.value }
+                        : { dish: cuisine, description: '', price: e.target.value };
+                      updateListItem(index, newCuisine);
+                    }}
+                    className="w-24 p-3 border border-slate-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    placeholder="Price..."
+                  />
+                  <Button
+                    onClick={() => removeListItem(index)}
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <textarea
+                  value={typeof cuisine === 'object' ? cuisine.description || '' : ''}
+                  onChange={(e) => {
+                    const newCuisine = typeof cuisine === 'object' 
+                      ? { ...cuisine, description: e.target.value }
+                      : { dish: cuisine, description: e.target.value, price: '' };
+                    updateListItem(index, newCuisine);
+                  }}
+                  className="w-full p-3 border border-slate-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                  rows="2"
+                  placeholder="Description..."
+                />
+              </div>
+            ))}
+          </div>
+          <Button
+            onClick={() => addListItem({ dish: '', description: '', price: '' })}
+            variant="outline"
+            className="w-full border-dashed border-amber-300 text-amber-600 hover:bg-amber-50"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Cuisine
+          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleSaveSection}
+              disabled={saveLoading}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {saveLoading ? "Saving..." : "Save"}
+            </Button>
+            <Button
+              onClick={handleCancelEdit}
+              variant="outline"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : plan.localcuisinerecommendations?.length > 0 ? (
+        <div className="space-y-4">
+          {Array.isArray(plan.localcuisinerecommendations) ? plan.localcuisinerecommendations.map((cuisine, index) => (
+            <div
+              key={index}
+              className="p-4 border border-slate-200/50 dark:border-gray-700/50 rounded-xl bg-gradient-to-br from-white to-amber-50/30 dark:from-gray-800/50 dark:to-amber-950/20 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center mt-1 flex-shrink-0">
+                  <ChefHat className="w-3 h-3 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-slate-900 dark:text-white">
+                      {typeof cuisine === 'object' ? cuisine.dish : cuisine}
+                    </h3>
+                    {typeof cuisine === 'object' && cuisine.price && (
+                      <span className="text-sm font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 px-3 py-1 rounded-full border border-amber-200/50 dark:border-amber-800/30">
+                        {cuisine.price}
+                      </span>
+                    )}
+                  </div>
+                  {typeof cuisine === 'object' && cuisine.description && (
+                    <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
+                      {cuisine.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )) : (
+            <div className="text-center text-slate-500 py-4">
+              No cuisine recommendations available
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="text-slate-500 text-center py-8">No cuisine recommendations available.</p>
+      )}
+    </CardContent>
+  </Card>
+);
 
 const PlanDetailPage = ({ isPublic = false }) => {
   const { planId } = useParams()
@@ -35,6 +486,11 @@ const PlanDetailPage = ({ isPublic = false }) => {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("overview")
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [editingSection, setEditingSection] = useState(null)
+  const [editingContent, setEditingContent] = useState("")
+  const [saveLoading, setSaveLoading] = useState(false)
+  const [editingListContent, setEditingListContent] = useState([])
+  const [editingItineraryContent, setEditingItineraryContent] = useState([])
 
   const handleDeletePlan = async () => {
     if (!window.confirm('Are you sure you want to delete this plan? This action cannot be undone.')) {
@@ -51,6 +507,166 @@ const PlanDetailPage = ({ isPublic = false }) => {
     } finally {
       setDeleteLoading(false);
     }
+  };
+
+  const handleEditSection = (sectionName) => {
+    // Set the section to edit mode and populate content
+    setEditingSection(sectionName);
+    
+    if (sectionName === 'topplacestovisit' || sectionName === 'adventuresactivitiestodo' || sectionName === 'packingchecklist') {
+      // For array content, set the array content
+      const currentContent = plan[sectionName] || [];
+      setEditingListContent(Array.isArray(currentContent) ? currentContent : []);
+    } else if (sectionName === 'localcuisinerecommendations') {
+      // For cuisine content, ensure proper object structure
+      const currentContent = plan[sectionName] || [];
+      const formattedContent = Array.isArray(currentContent) 
+        ? currentContent.map(item => {
+            if (typeof item === 'string') {
+              return { dish: item, description: '', price: '' };
+            }
+            return { dish: item.dish || '', description: item.description || '', price: item.price || '' };
+          })
+        : [];
+      setEditingListContent(formattedContent);
+    } else if (sectionName === 'itinerary') {
+      // For itinerary, ensure proper structure with time slots
+      const currentContent = plan[sectionName] || [];
+      const formattedContent = Array.isArray(currentContent) 
+        ? currentContent.map(day => ({
+            day: day.day || 1,
+            title: day.title || '',
+            morning: Array.isArray(day.morning) ? day.morning : (day.activities ? day.activities.slice(0, Math.ceil(day.activities.length / 3)) : []),
+            afternoon: Array.isArray(day.afternoon) ? day.afternoon : (day.activities ? day.activities.slice(Math.ceil(day.activities.length / 3), Math.ceil(2 * day.activities.length / 3)) : []),
+            evening: Array.isArray(day.evening) ? day.evening : (day.activities ? day.activities.slice(Math.ceil(2 * day.activities.length / 3)) : [])
+          }))
+        : [];
+      setEditingItineraryContent(formattedContent);
+    } else {
+      // For text content
+      const currentContent = plan[sectionName] || "";
+      setEditingContent(currentContent);
+    }
+  };
+
+  const handleSaveSection = async () => {
+    try {
+      setSaveLoading(true);
+      
+      // Determine what content to save based on section type
+      let updateData = {};
+      if (editingSection === 'topplacestovisit' || editingSection === 'adventuresactivitiestodo' || editingSection === 'packingchecklist') {
+        updateData[editingSection] = editingListContent;
+      } else if (editingSection === 'itinerary') {
+        updateData[editingSection] = editingItineraryContent;
+      } else {
+        updateData[editingSection] = editingContent;
+      }
+      
+      console.log('Updating plan with data:', updateData);
+      const response = await plansAPI.updatePlan(plan.id || plan._id, updateData);
+      console.log('Update response:', response);
+      
+      // Update local state
+      setPlan({
+        ...plan,
+        ...updateData
+      });
+      
+      // Exit edit mode
+      setEditingSection(null);
+      setEditingContent("");
+      setEditingListContent([]);
+      setEditingItineraryContent([]);
+      
+      console.log('Section updated successfully');
+      
+    } catch (error) {
+      console.error('Error updating section:', error);
+      alert('Failed to update section. Please try again.');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingSection(null);
+    setEditingContent("");
+    setEditingListContent([]);
+    setEditingItineraryContent([]);
+  };
+
+  const addListItem = (defaultValue = "") => {
+    if (editingSection === 'localcuisinerecommendations') {
+      setEditingListContent([...editingListContent, { dish: '', description: '', price: '' }]);
+    } else {
+      setEditingListContent([...editingListContent, defaultValue]);
+    }
+  };
+
+  const updateListItem = (index, value) => {
+    const newList = [...editingListContent];
+    newList[index] = value;
+    setEditingListContent(newList);
+  };
+
+  const removeListItem = (index) => {
+    const newList = editingListContent.filter((_, i) => i !== index);
+    setEditingListContent(newList);
+  };
+
+  const addItineraryDay = () => {
+    setEditingItineraryContent([
+      ...editingItineraryContent,
+      { 
+        day: editingItineraryContent.length + 1, 
+        title: "", 
+        morning: [],
+        afternoon: [],
+        evening: []
+      }
+    ]);
+  };
+
+  const updateItineraryDay = (dayIndex, field, value) => {
+    const newItinerary = [...editingItineraryContent];
+    newItinerary[dayIndex] = { ...newItinerary[dayIndex], [field]: value };
+    setEditingItineraryContent(newItinerary);
+  };
+
+  const addItineraryActivity = (dayIndex) => {
+    const newItinerary = [...editingItineraryContent];
+    if (!Array.isArray(newItinerary[dayIndex].activities)) {
+      newItinerary[dayIndex].activities = [];
+    }
+    newItinerary[dayIndex].activities.push("");
+    setEditingItineraryContent(newItinerary);
+  };
+
+  const updateItineraryActivity = (dayIndex, activityIndex, value) => {
+    const newItinerary = [...editingItineraryContent];
+    if (!Array.isArray(newItinerary[dayIndex].activities)) {
+      newItinerary[dayIndex].activities = [];
+    }
+    newItinerary[dayIndex].activities[activityIndex] = value;
+    setEditingItineraryContent(newItinerary);
+  };
+
+  const removeItineraryActivity = (dayIndex, activityIndex) => {
+    const newItinerary = [...editingItineraryContent];
+    if (Array.isArray(newItinerary[dayIndex].activities)) {
+      newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.filter((_, i) => i !== activityIndex);
+    }
+    setEditingItineraryContent(newItinerary);
+  };
+
+  const removeItineraryDay = (dayIndex) => {
+    const newItinerary = editingItineraryContent.filter((_, i) => i !== dayIndex);
+    // Renumber the days
+    newItinerary.forEach((day, index) => {
+      day.day = index + 1;
+    });
+    setEditingItineraryContent(newItinerary);
   };
 
   useEffect(() => {
@@ -105,21 +721,17 @@ const PlanDetailPage = ({ isPublic = false }) => {
         return (
           <div className="space-y-6">
             {/* About Section */}
-            <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
-              <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/30 dark:to-purple-950/30">
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                    <Building2 className="w-4 h-4 text-white" />
-                  </div>
-                  About {plan.nameoftheplace}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                  {plan.abouttheplace || "No description available for this destination."}
-                </p>
-              </CardContent>
-            </Card>
+            <AboutSection 
+              plan={plan}
+              isPublic={isPublic}
+              editingSection={editingSection}
+              editingContent={editingContent}
+              setEditingContent={setEditingContent}
+              handleEditSection={handleEditSection}
+              handleSaveSection={handleSaveSection}
+              handleCancelEdit={handleCancelEdit}
+              saveLoading={saveLoading}
+            />
 
             {/* Trip Statistics */}
             <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
@@ -196,15 +808,52 @@ const PlanDetailPage = ({ isPublic = false }) => {
           <div className="space-y-6">
             <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
               <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/30">
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-4 h-4 text-white" />
-                  </div>
-                  Best Time to Visit {plan.nameoftheplace}
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <Calendar className="w-4 h-4 text-white" />
+                    </div>
+                    Best Time to Visit {plan.nameoftheplace}
+                  </CardTitle>
+                  {!isPublic && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditSection('besttimetovisit')}
+                      className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="p-6">
-                {plan.besttimetovisit ? (
+                {editingSection === 'besttimetovisit' ? (
+                  <div className="space-y-4">
+                    <textarea
+                      value={editingContent}
+                      onChange={(e) => setEditingContent(e.target.value)}
+                      className="w-full h-32 p-3 border border-slate-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      placeholder="Enter information about the best time to visit..."
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleSaveSection}
+                        disabled={saveLoading}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        {saveLoading ? "Saving..." : "Save"}
+                      </Button>
+                      <Button
+                        onClick={handleCancelEdit}
+                        variant="outline"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : plan.besttimetovisit ? (
                   <div className="space-y-4">
                     <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
                       {plan.besttimetovisit}
@@ -223,15 +872,75 @@ const PlanDetailPage = ({ isPublic = false }) => {
           <div className="space-y-6">
             <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
               <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-950/30 dark:to-teal-950/30">
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
-                    <MapPin className="w-4 h-4 text-white" />
-                  </div>
-                  Key Destinations in {plan.nameoftheplace}
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+                      <MapPin className="w-4 h-4 text-white" />
+                    </div>
+                    Key Destinations in {plan.nameoftheplace}
+                  </CardTitle>
+                  {!isPublic && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditSection('topplacestovisit')}
+                      className="text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="p-6">
-                {plan.topplacestovisit?.length > 0 ? (
+                {editingSection === 'topplacestovisit' ? (
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      {editingListContent.map((place, index) => (
+                        <div key={index} className="flex gap-2">
+                          <input
+                            type="text"
+                            value={typeof place === 'string' ? place : place.name || ''}
+                            onChange={(e) => updateListItem(index, typeof place === 'string' ? e.target.value : { ...place, name: e.target.value })}
+                            className="flex-1 p-3 border border-slate-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            placeholder="Enter place name..."
+                          />
+                          <Button
+                            onClick={() => removeListItem(index)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      onClick={addListItem}
+                      variant="outline"
+                      className="w-full border-dashed border-emerald-300 text-emerald-600 hover:bg-emerald-50"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Place
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleSaveSection}
+                        disabled={saveLoading}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        {saveLoading ? "Saving..." : "Save"}
+                      </Button>
+                      <Button
+                        onClick={handleCancelEdit}
+                        variant="outline"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : plan.topplacestovisit?.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {Array.isArray(plan.topplacestovisit) ? plan.topplacestovisit.map((place, index) => (
                       <div
@@ -293,15 +1002,75 @@ const PlanDetailPage = ({ isPublic = false }) => {
           <div className="space-y-6">
             <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
               <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-950/30 dark:to-pink-950/30">
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
-                    <Star className="w-4 h-4 text-white" />
-                  </div>
-                  Activities & Experiences
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
+                      <Star className="w-4 h-4 text-white" />
+                    </div>
+                    Activities & Experiences
+                  </CardTitle>
+                  {!isPublic && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditSection('adventuresactivitiestodo')}
+                      className="text-slate-600 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400"
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="p-6">
-                {plan.adventuresactivitiestodo?.length > 0 ? (                  <div className="space-y-3">
+                {editingSection === 'adventuresactivitiestodo' ? (
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      {editingListContent.map((activity, index) => (
+                        <div key={index} className="flex gap-2">
+                          <input
+                            type="text"
+                            value={activity}
+                            onChange={(e) => updateListItem(index, e.target.value)}
+                            className="flex-1 p-3 border border-slate-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="Enter activity..."
+                          />
+                          <Button
+                            onClick={() => removeListItem(index)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      onClick={addListItem}
+                      variant="outline"
+                      className="w-full border-dashed border-purple-300 text-purple-600 hover:bg-purple-50"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Activity
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleSaveSection}
+                        disabled={saveLoading}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        {saveLoading ? "Saving..." : "Save"}
+                      </Button>
+                      <Button
+                        onClick={handleCancelEdit}
+                        variant="outline"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : plan.adventuresactivitiestodo?.length > 0 ? (                  <div className="space-y-3">
                     {Array.isArray(plan.adventuresactivitiestodo) ? plan.adventuresactivitiestodo.map((activity, index) => (
                       <div
                         key={index}
@@ -328,105 +1097,41 @@ const PlanDetailPage = ({ isPublic = false }) => {
       case "itinerary":
         return (
           <div className="space-y-6">
-            <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
-              <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-indigo-50/50 to-blue-50/50 dark:from-indigo-950/30 dark:to-blue-950/30">
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-white" />
-                  </div>
-                  Daily Itinerary
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                {plan.itinerary?.length > 0 ? (
-                  <div className="space-y-6">
-                    {plan.itinerary.map((day, index) => (
-                      <div key={index} className="relative">
-                        <div className="flex items-start gap-4">
-                          <div className="flex flex-col items-center">
-                            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-xl flex items-center justify-center text-sm font-semibold shadow-md">
-                              {day.day}
-                            </div>
-                            {index < plan.itinerary.length - 1 && (
-                              <div className="w-px h-12 bg-gradient-to-b from-indigo-300 to-blue-300 dark:from-indigo-600 dark:to-blue-600 mt-2"></div>
-                            )}
-                          </div>
-                          <div className="flex-1 pb-4">
-                            <h3 className="font-semibold text-slate-900 dark:text-white mb-3">{day.title}</h3>                            <div className="space-y-2">
-                              {Array.isArray(day.activities) ? day.activities.map((activity, actIndex) => (
-                                <div
-                                  key={actIndex}
-                                  className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 p-3 bg-gradient-to-r from-indigo-50/50 to-blue-50/50 dark:from-indigo-950/30 dark:to-blue-950/30 rounded-lg border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm"
-                                >
-                                  <div className="w-1.5 h-1.5 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-full flex-shrink-0"></div>
-                                  {activity}
-                                </div>
-                              )) : (
-                                <div className="text-sm text-slate-600 dark:text-slate-400 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                                  No activities available for this day
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-slate-500 text-center py-8">No itinerary available.</p>
-                )}
-              </CardContent>
-            </Card>
+            <ItinerarySection 
+              plan={plan}
+              isPublic={isPublic}
+              editingSection={editingSection}
+              editingItineraryContent={editingItineraryContent}
+              handleEditSection={handleEditSection}
+              handleSaveSection={handleSaveSection}
+              handleCancelEdit={handleCancelEdit}
+              saveLoading={saveLoading}
+              addItineraryDay={addItineraryDay}
+              updateItineraryDay={updateItineraryDay}
+              addItineraryActivity={addItineraryActivity}
+              updateItineraryActivity={updateItineraryActivity}
+              removeItineraryActivity={removeItineraryActivity}
+              removeItineraryDay={removeItineraryDay}
+            />
           </div>
         )
 
       case "localcuisinerecommendations":
         return (
           <div className="space-y-6">
-            <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
-              <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/30">
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
-                    <ChefHat className="w-4 h-4 text-white" />
-                  </div>
-                  Local Cuisine Recommendations
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                {plan.localcuisinerecommendations?.length > 0 ? (
-                  <div className="space-y-4">
-                    {Array.isArray(plan.localcuisinerecommendations) ? plan.localcuisinerecommendations.map((cuisine, index) => (
-                      <div
-                        key={index}
-                        className="p-4 border border-slate-200/50 dark:border-gray-700/50 rounded-xl bg-gradient-to-br from-white to-amber-50/30 dark:from-gray-800/50 dark:to-amber-950/20 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="w-6 h-6 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center mt-1 flex-shrink-0">
-                            <ChefHat className="w-3 h-3 text-white" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-2">
-                              <h3 className="font-semibold text-slate-900 dark:text-white">{cuisine.dish}</h3>
-                              <span className="text-sm font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 px-3 py-1 rounded-full border border-amber-200/50 dark:border-amber-800/30">
-                                {cuisine.price}
-                              </span>
-                            </div>                            <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
-                              {cuisine.description}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )) : (
-                      <div className="text-center text-slate-500 py-4">
-                        No cuisine recommendations available
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-slate-500 text-center py-8">No cuisine recommendations available.</p>
-                )}
-              </CardContent>
-            </Card>
+            <LocalCuisineSection 
+              plan={plan}
+              isPublic={isPublic}
+              editingSection={editingSection}
+              editingListContent={editingListContent}
+              handleEditSection={handleEditSection}
+              handleSaveSection={handleSaveSection}
+              handleCancelEdit={handleCancelEdit}
+              saveLoading={saveLoading}
+              addListItem={addListItem}
+              updateListItem={updateListItem}
+              removeListItem={removeListItem}
+            />
           </div>
         )
 
@@ -435,15 +1140,75 @@ const PlanDetailPage = ({ isPublic = false }) => {
           <div className="space-y-6">
             <Card className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md">
               <CardHeader className="border-b border-slate-200/50 dark:border-gray-700/50 bg-gradient-to-r from-teal-50/50 to-cyan-50/50 dark:from-teal-950/30 dark:to-cyan-950/30">
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg flex items-center justify-center">
-                    <Backpack className="w-4 h-4 text-white" />
-                  </div>
-                  Packing Checklist
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg flex items-center justify-center">
+                      <Backpack className="w-4 h-4 text-white" />
+                    </div>
+                    Packing Checklist
+                  </CardTitle>
+                  {!isPublic && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditSection('packingchecklist')}
+                      className="text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400"
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="p-6">
-                {plan.packingchecklist?.length > 0 ? (
+                {editingSection === 'packingchecklist' ? (
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      {editingListContent.map((item, index) => (
+                        <div key={index} className="flex gap-2">
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => updateListItem(index, e.target.value)}
+                            className="flex-1 p-3 border border-slate-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                            placeholder="Enter packing item..."
+                          />
+                          <Button
+                            onClick={() => removeListItem(index)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      onClick={addListItem}
+                      variant="outline"
+                      className="w-full border-dashed border-teal-300 text-teal-600 hover:bg-teal-50"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Item
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleSaveSection}
+                        disabled={saveLoading}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        {saveLoading ? "Saving..." : "Save"}
+                      </Button>
+                      <Button
+                        onClick={handleCancelEdit}
+                        variant="outline"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : plan.packingchecklist?.length > 0 ? (
                   <div className="space-y-2">
                     {Array.isArray(plan.packingchecklist) ? plan.packingchecklist.map((item, index) => (
                       <div
@@ -599,27 +1364,29 @@ const PlanDetailPage = ({ isPublic = false }) => {
               <Share2 className="w-4 h-4 mr-2" />
               Share
             </Button>
-            {!isPublic && !plan.isGeneratedUsingAI && (
+            {!isPublic && (
               <>
                 <Button
                   variant="secondary"
                   size="sm"
                   className="bg-white/90 hover:bg-white text-slate-900 border-0 shadow-lg backdrop-blur-md"
-                  onClick={() => navigate('/plans/new', { state: { editPlan: plan } })}
+                  onClick={() => navigate(`/plans/${plan.id || plan._id}/edit`)}
                 >
                   <Edit className="w-4 h-4 mr-2" />
                   Edit
                 </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={deleteLoading}
-                  className="bg-red-50/90 hover:bg-red-100 text-red-700 border-0 shadow-lg backdrop-blur-md"
-                  onClick={handleDeletePlan}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
+                {!plan.isGeneratedUsingAI && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={deleteLoading}
+                    className="bg-red-50/90 hover:bg-red-100 text-red-700 border-0 shadow-lg backdrop-blur-md"
+                    onClick={handleDeletePlan}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
+                )}
               </>
             )}
           </div>
@@ -630,7 +1397,7 @@ const PlanDetailPage = ({ isPublic = false }) => {
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-3 mb-3">
               <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 px-3 py-1 text-xs font-medium shadow-md">
-                {plan.status || "Community Plan"}
+                {plan.isGeneratedUsingAI ? "AI Plan" : (plan.status || "Community Plan")}
               </Badge>
               {plan.rating && (
                 <Badge className="bg-gradient-to-r from-amber-500 to-orange-600 text-white border-0 px-3 py-1 text-xs font-medium shadow-md">

@@ -8,7 +8,9 @@ const {
   addCredits,
   getAllUsers,
   deactivateAccount,
-  deleteAccount
+  deleteAccount,
+  updateUserStatus,
+  deleteUser
 } = require('../controllers/userController');
 
 // All Testing Done.
@@ -25,6 +27,8 @@ router.post('/credits/reduce', auth, reduceCredits);
 // Admin routes
 router.get('/all', auth, adminOnly, getAllUsers);
 router.post('/:userId/credits/add', auth, adminOnly, addCredits);
+router.put('/:userId/status', auth, adminOnly, updateUserStatus);
+router.delete('/:userId', auth, adminOnly, deleteUser);
 
 // Account management
 router.post('/deactivate', auth, deactivateAccount);

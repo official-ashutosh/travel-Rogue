@@ -21,6 +21,8 @@ import {
   AlertTriangle,
   Clock,
   DollarSign,
+  RefreshCw,
+  Filter,
 } from "lucide-react"
 import { Button } from "../ui/Button.jsx"
 import { Input } from "../ui/Input.jsx"
@@ -28,97 +30,6 @@ import { Badge } from "../ui/Badge.jsx"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card.jsx"
 import UnifiedPlanCard from "../ui/UnifiedPlanCard.jsx"
 import { userAPI, plansAPI, feedbackAPI, dashboardAPI } from "../../lib/api.js"
-
-// Sample admin data for fallback
-const sampleUsers = [
-  {
-    _id: "1",
-    firstName: "Sarah",
-    lastName: "Chen",
-    email: "sarah.chen@email.com",
-    createdAt: "2024-01-15",
-    status: "active",
-    plansCount: 12,
-    lastLogin: "2024-03-10",
-    subscription: "premium",
-  },
-  {
-    _id: "2",
-    firstName: "Alex",
-    lastName: "Johnson",
-    email: "alex.johnson@email.com",
-    createdAt: "2024-01-20",
-    status: "active",
-    plansCount: 8,
-    lastLogin: "2024-03-09",
-    subscription: "free",
-  },
-  {
-    _id: "3",
-    firstName: "Marie",
-    lastName: "Dubois",
-    email: "marie.dubois@email.com",
-    createdAt: "2024-02-01",
-    status: "suspended",
-    plansCount: 15,
-    lastLogin: "2024-03-05",
-    subscription: "premium",
-  },
-]
-
-const samplePlans = [
-  {
-    _id: "1",
-    nameoftheplace: "Tokyo, Japan",
-    abouttheplace: "Experience the vibrant culture, amazing food, and modern technology of Tokyo.",
-    imageurl: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&h=300&fit=crop",
-    userId: { firstName: "Sarah", lastName: "Chen" },
-    status: "published",
-    isPublic: true,
-    views: 1250,
-    likes: 89,
-    createdAt: "2024-01-15",
-    budget: 2800,
-    duration: "7 days",
-  },
-  {
-    _id: "2",
-    nameoftheplace: "Paris, France",
-    abouttheplace: "Romantic getaway through the City of Light.",
-    imageurl: "https://images.unsplash.com/photo-1502602898536-47ad22581b52?w=400&h=300&fit=crop",
-    userId: { firstName: "Marie", lastName: "Dubois" },
-    status: "pending",
-    isPublic: false,
-    views: 0,
-    likes: 0,
-    createdAt: "2024-02-20",
-    budget: 3200,
-    duration: "5 days",
-  },
-]
-
-const sampleFeedback = [
-  {
-    _id: "1",
-    userId: { firstName: "Sarah", lastName: "Chen", email: "sarah.chen@email.com" },
-    subject: "Feature Request",
-    message: "Would love to see more AI-powered recommendations for local activities.",
-    status: "pending",
-    priority: "medium",
-    createdAt: "2024-03-08",
-    category: "feature",
-  },
-  {
-    _id: "2",
-    userId: { firstName: "Alex", lastName: "Johnson", email: "alex.johnson@email.com" },
-    subject: "Bug Report",
-    message: "The map feature is not loading properly on mobile devices.",
-    status: "pending",
-    priority: "high",
-    createdAt: "2024-03-09",
-    category: "bug",
-  },
-]
 
 const AdminDashboardPage = () => {
   const [activeTab, setActiveTab] = useState("overview")
@@ -138,57 +49,101 @@ const AdminDashboardPage = () => {
   })
   const [loading, setLoading] = useState(true)
 
+  const refreshData = async () => {
+    try {
+      const [statsResponse, usersResponse, plansResponse, feedbackResponse] = await Promise.all([
+        dashboardAPI.getAdminStats().catch(() => null),
+        userAPI.getAllUsers().catch(() => null),
+        plansAPI.getAllPlans().catch(() => null),
+        feedbackAPI.getAllFeedback().catch(() => null)
+      ])
+
+      if (statsResponse) {
+        const stats = statsResponse.data?.data?.stats?.overview || statsResponse.data?.stats?.overview || {};
+        setAdminStats({
+          totalUsers: stats.totalUsers || 0,
+          totalPlans: stats.totalPlans || 0,
+          communityPlans: stats.publicPlans || 0,
+          pendingFeedback: stats.pendingFeedback || 0,
+          totalRevenue: stats.totalRevenue || 0,
+          activeUsers: stats.activeUsers || 0,
+        })
+      }
+
+      if (usersResponse) {
+        console.log('Refresh users response:', usersResponse) // Debug log
+        const usersData = usersResponse.data?.data?.users || usersResponse.data?.users || []
+        setUsers(Array.isArray(usersData) ? usersData : [])
+      }
+
+      if (plansResponse) {
+        const plansData = plansResponse.data?.data?.plans || plansResponse.data?.plans || []
+        setPlans(Array.isArray(plansData) ? plansData : [])
+      }
+
+      if (feedbackResponse) {
+        const feedbackData = feedbackResponse.data?.data?.feedback || feedbackResponse.data?.feedback || []
+        setFeedback(Array.isArray(feedbackData) ? feedbackData : [])
+      }
+    } catch (error) {
+      console.error('Error refreshing data:', error)
+    }
+  }
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
         
-        // Fetch admin dashboard stats
         try {
           const statsResponse = await dashboardAPI.getAdminStats()
-          setAdminStats(statsResponse.data || {
-            totalUsers: 0,
-            totalPlans: 0,
-            communityPlans: 0,
-            pendingFeedback: 0,
-            totalRevenue: 0,
-            activeUsers: 0,
+          const stats = statsResponse.data?.data?.stats?.overview || statsResponse.data?.stats?.overview || {};
+          setAdminStats({
+            totalUsers: stats.totalUsers || 0,
+            totalPlans: stats.totalPlans || 0,
+            communityPlans: stats.publicPlans || 0,
+            pendingFeedback: stats.pendingFeedback || 0,
+            totalRevenue: stats.totalRevenue || 0,
+            activeUsers: stats.activeUsers || 0,
           })
         } catch (error) {
           console.error("Error fetching admin stats:", error)
         }
 
-        // Fetch users
         try {
           const usersResponse = await userAPI.getAllUsers()
-          setUsers(usersResponse.data?.data || usersResponse.data || [])
+          const usersData = usersResponse.data?.data?.users || usersResponse.data?.users || []
+          console.log('Parsed users:', usersData) // Debug log
+          setUsers(Array.isArray(usersData) ? usersData : [])
         } catch (error) {
           console.error("Error fetching users:", error)
-          setUsers(sampleUsers) // Fallback to sample data
+          setUsers([])
         }
 
         // Fetch plans
         try {
-          const plansResponse = await plansAPI.getUserPlans() // Use existing endpoint
-          const publicPlansResponse = await plansAPI.getPublicPlans()
-          const allPlans = [
-            ...(plansResponse.data?.data?.ownPlans || []),
-            ...(plansResponse.data?.data?.sharedPlans || []),
-            ...(publicPlansResponse.data || [])
-          ]
-          setPlans(allPlans)
+          const plansResponse = await plansAPI.getAllPlans()
+          console.log('Plans response:', plansResponse) // Debug log
+          console.log('Plans data:', plansResponse.data) // Debug log
+          const plansData = plansResponse.data?.data?.plans || plansResponse.data?.plans || []
+          console.log('Parsed plans:', plansData) // Debug log
+          setPlans(Array.isArray(plansData) ? plansData : [])
         } catch (error) {
           console.error("Error fetching plans:", error)
-          setPlans(samplePlans) // Fallback to sample data
+          setPlans([])
         }
 
         // Fetch feedback
         try {
           const feedbackResponse = await feedbackAPI.getAllFeedback()
-          setFeedback(feedbackResponse.data?.data || feedbackResponse.data || [])
+          console.log('Feedback response:', feedbackResponse) // Debug log
+          console.log('Feedback data:', feedbackResponse.data) // Debug log
+          const feedbackData = feedbackResponse.data?.data?.feedback || feedbackResponse.data?.feedback || []
+          console.log('Parsed feedback:', feedbackData) // Debug log
+          setFeedback(Array.isArray(feedbackData) ? feedbackData : [])
         } catch (error) {
           console.error("Error fetching feedback:", error)
-          setFeedback(sampleFeedback) // Fallback to sample data
+          setFeedback([])
         }
 
       } catch (error) {
@@ -205,19 +160,152 @@ const AdminDashboardPage = () => {
     setSearchText(e.target.value)
   }
 
-  const handleUserAction = (action, user) => {
-    console.log(`${action} user:`, user)
-    // Implement user actions (suspend, activate, delete, etc.)
+  // Filter functions
+  const getFilteredUsers = () => {
+    if (!Array.isArray(users)) return [];
+    return users.filter(user => {
+      const matchesSearch = 
+        user.firstName?.toLowerCase().includes(searchText.toLowerCase()) ||
+        user.lastName?.toLowerCase().includes(searchText.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchText.toLowerCase())
+      
+      return matchesSearch
+    })
   }
 
-  const handlePlanAction = (action, plan) => {
-    console.log(`${action} plan:`, plan)
-    // Implement plan actions (approve, reject, delete, etc.)
+  const getFilteredPlans = () => {
+    if (!Array.isArray(plans)) return [];
+    return plans.filter(plan => {
+      const matchesSearch = 
+        plan.nameoftheplace?.toLowerCase().includes(searchText.toLowerCase()) ||
+        plan.abouttheplace?.toLowerCase().includes(searchText.toLowerCase())
+      
+      const matchesStatus = filterStatus === 'all' || plan.status === filterStatus
+      
+      return matchesSearch && matchesStatus
+    })
   }
 
-  const handleFeedbackAction = (action, feedbackItem) => {
-    console.log(`${action} feedback:`, feedbackItem)
-    // Implement feedback actions (resolve, respond, etc.)
+  const getFilteredFeedback = () => {
+    if (!Array.isArray(feedback)) return [];
+    return feedback.filter(item => {
+      const matchesSearch = 
+        item.subject?.toLowerCase().includes(searchText.toLowerCase()) ||
+        item.message?.toLowerCase().includes(searchText.toLowerCase()) ||
+        item.userId?.email?.toLowerCase().includes(searchText.toLowerCase())
+      
+      const matchesStatus = filterStatus === 'all' || 
+        (filterStatus === 'high' && item.priority === 'high') ||
+        item.status === filterStatus
+      
+      return matchesSearch && matchesStatus
+    })
+  }
+
+  const handleUserAction = async (action, user) => {
+    try {
+      switch (action) {
+        case 'suspend':
+          await userAPI.updateUserStatus(user._id, 'suspended')
+          await refreshData()
+          alert(`User ${user.firstName} ${user.lastName} has been suspended.`)
+          break
+        case 'activate':
+          await userAPI.updateUserStatus(user._id, 'active')
+          await refreshData()
+          alert(`User ${user.firstName} ${user.lastName} has been activated.`)
+          break
+        case 'delete':
+          if (window.confirm(`Are you sure you want to delete user ${user.firstName} ${user.lastName}? This action cannot be undone.`)) {
+            await userAPI.deleteUser(user._id)
+            await refreshData()
+            alert(`User ${user.firstName} ${user.lastName} has been deleted.`)
+          }
+          break
+        case 'view':
+          // Navigate to user details or show modal
+          alert(`Viewing details for ${user.firstName} ${user.lastName}`)
+          break
+        default:
+          console.log(`${action} user:`, user)
+      }
+    } catch (error) {
+      console.error(`Error performing ${action} on user:`, error)
+      alert(`Failed to ${action} user. Please try again.`)
+    }
+  }
+
+  const handlePlanAction = async (action, plan) => {
+    try {
+      switch (action) {
+        case 'approve':
+          await plansAPI.updatePlanStatus(plan._id, 'published')
+          await refreshData()
+          alert(`Plan "${plan.nameoftheplace}" has been approved and published.`)
+          break
+        case 'reject':
+          await plansAPI.updatePlanStatus(plan._id, 'rejected')
+          await refreshData()
+          alert(`Plan "${plan.nameoftheplace}" has been rejected.`)
+          break
+        case 'delete':
+          if (window.confirm(`Are you sure you want to delete the plan "${plan.nameoftheplace}"? This action cannot be undone.`)) {
+            await plansAPI.deletePlanAdmin(plan._id)
+            await refreshData()
+            alert(`Plan "${plan.nameoftheplace}" has been deleted.`)
+          }
+          break
+        case 'feature':
+          await plansAPI.updatePlanStatus(plan._id, 'featured')
+          await refreshData()
+          alert(`Plan "${plan.nameoftheplace}" has been featured.`)
+          break
+        default:
+          console.log(`${action} plan:`, plan)
+      }
+    } catch (error) {
+      console.error(`Error performing ${action} on plan:`, error)
+      alert(`Failed to ${action} plan. Please try again.`)
+    }
+  }
+
+  const handleFeedbackAction = async (action, feedbackItem) => {
+    try {
+      switch (action) {
+        case 'resolve':
+          await feedbackAPI.updateFeedbackStatus(feedbackItem._id, 'resolved')
+          await refreshData()
+          alert(`Feedback "${feedbackItem.subject}" has been marked as resolved.`)
+          break
+        case 'respond':
+          const response = prompt(`Enter your response to "${feedbackItem.subject}":`)
+          if (response) {
+            await feedbackAPI.respondToFeedback(feedbackItem._id, response)
+            alert(`Response sent to ${feedbackItem.userId?.email || 'user'}.`)
+          }
+          break
+        case 'delete':
+          if (window.confirm(`Are you sure you want to delete this feedback? This action cannot be undone.`)) {
+            await feedbackAPI.deleteFeedback(feedbackItem._id)
+            await refreshData()
+            alert('Feedback has been deleted.')
+          }
+          break
+        case 'priority':
+          const priority = prompt('Enter priority (high, medium, low):')
+          if (priority && ['high', 'medium', 'low'].includes(priority)) {
+            await feedbackAPI.updateFeedback(feedbackItem._id, { priority })
+            await refreshData()
+            alert(`Priority updated to ${priority}.`)
+          }
+          break
+        default:
+          console.log(`${action} feedback:`, feedbackItem)
+      }
+    } catch (error) {
+      console.error(`Error performing ${action} on feedback:`, error)
+      alert(`Failed to ${action} feedback. Please try again.`)
+    }
   }
 
   const getStatusBadge = (status) => {
@@ -287,7 +375,7 @@ const AdminDashboardPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-100 text-sm font-medium">Total Users</p>
-                <p className="text-2xl font-bold">{adminStats.totalUsers.toLocaleString()}</p>
+                <p className="text-2xl font-bold">{(adminStats.totalUsers || 0).toLocaleString()}</p>
               </div>
               <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                 <Users className="h-5 w-5 text-white" />
@@ -302,7 +390,7 @@ const AdminDashboardPage = () => {
               <div>
                 <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Total Plans</p>
                 <p className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
-                  {adminStats.totalPlans.toLocaleString()}
+                  {(adminStats.totalPlans || 0).toLocaleString()}
                 </p>
               </div>
               <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300">
@@ -318,7 +406,7 @@ const AdminDashboardPage = () => {
               <div>
                 <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Community Plans</p>
                 <p className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
-                  {adminStats.communityPlans}
+                  {adminStats.communityPlans || 0}
                 </p>
               </div>
               <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300">
@@ -334,7 +422,7 @@ const AdminDashboardPage = () => {
               <div>
                 <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Pending Feedback</p>
                 <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
-                  {adminStats.pendingFeedback}
+                  {adminStats.pendingFeedback || 0}
                 </p>
               </div>
               <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300">
@@ -350,7 +438,7 @@ const AdminDashboardPage = () => {
               <div>
                 <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Total Revenue</p>
                 <p className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 dark:from-indigo-400 dark:to-blue-400 bg-clip-text text-transparent">
-                  ${adminStats.totalRevenue.toLocaleString()}
+                  ${(adminStats.totalRevenue || 0).toLocaleString()}
                 </p>
               </div>
               <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300">
@@ -366,7 +454,7 @@ const AdminDashboardPage = () => {
               <div>
                 <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Active Users</p>
                 <p className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent">
-                  {adminStats.activeUsers}
+                  {adminStats.activeUsers || 0}
                 </p>
               </div>
               <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300">
@@ -390,7 +478,7 @@ const AdminDashboardPage = () => {
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-4">
-              {users.slice(0, 3).map((user) => (
+              {getFilteredUsers().slice(0, 3).map((user) => (
                 <div
                   key={user._id}
                   className="flex items-center justify-between p-3 bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-950/30 dark:to-blue-950/30 rounded-xl border border-slate-200/50 dark:border-gray-700/50"
@@ -442,7 +530,7 @@ const AdminDashboardPage = () => {
                   <p className="text-sm text-slate-600 dark:text-slate-400">High priority issues pending</p>
                 </div>
                 <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 text-purple-700 dark:text-purple-300 border border-purple-200/50 dark:border-purple-800/30">
-                  {adminStats.pendingFeedback}
+                  {adminStats.pendingFeedback || 0}
                 </Badge>
               </div>
             </div>
@@ -457,15 +545,26 @@ const AdminDashboardPage = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">User Management</h2>
         <div className="flex gap-2">
-          <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+          <Button 
+            onClick={exportUsers}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+          >
             <Download className="w-4 h-4 mr-2" />
             Export Users
+          </Button>
+          <Button 
+            onClick={refreshData}
+            variant="outline"
+            className="border-blue-200 hover:bg-blue-50 text-blue-700"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
           </Button>
         </div>
       </div>
 
       <div className="space-y-4">
-        {users.map((user) => (
+        {getFilteredUsers().map((user) => (
           <Card
             key={user._id}
             className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md hover:shadow-xl transition-all duration-300"
@@ -509,14 +608,25 @@ const AdminDashboardPage = () => {
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleUserAction("suspend", user)}
-                      className="bg-amber-100 hover:bg-amber-200 text-amber-700"
-                    >
-                      <XCircle className="w-4 h-4" />
-                    </Button>
+                    {user.status === 'active' ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleUserAction("suspend", user)}
+                        className="bg-amber-100 hover:bg-amber-200 text-amber-700"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleUserAction("activate", user)}
+                        className="bg-green-100 hover:bg-green-200 text-green-700"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="ghost"
@@ -540,7 +650,29 @@ const AdminDashboardPage = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Plans Management</h2>
         <div className="flex gap-2">
-          <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white">
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-2 text-sm border border-slate-200/50 dark:border-gray-600/50 rounded-xl bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 focus:border-blue-500 dark:focus:border-blue-400 transition-all duration-300 shadow-sm"
+          >
+            <option value="all">All Plans</option>
+            <option value="pending">Pending</option>
+            <option value="published">Published</option>
+            <option value="rejected">Rejected</option>
+            <option value="featured">Featured</option>
+          </select>
+          <Button 
+            onClick={refreshData}
+            variant="outline"
+            className="border-green-200 hover:bg-green-50 text-green-700"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+          <Button 
+            onClick={handleAddCommunityPlan}
+            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add Community Plan
           </Button>
@@ -548,35 +680,69 @@ const AdminDashboardPage = () => {
       </div>
 
       <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
-        {plans.map((plan) => (
-          <div key={plan._id} className="relative">
-            <UnifiedPlanCard
-              plan={plan}
-              viewMode={viewMode}
-              isPublic={plan.isPublic}
-            />
-            <div className="absolute top-3 left-3 z-10">{getStatusBadge(plan.status)}</div>
-            {plan.status === "pending" && (
-              <div className="absolute top-3 right-3 z-10 flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => handlePlanAction("approve", plan)}
-                  className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-md"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => handlePlanAction("reject", plan)}
-                  className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 shadow-md"
-                >
-                  <XCircle className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
-          </div>
-        ))}
+        {getFilteredPlans().map((plan) => {
+          console.log('Admin plan data:', plan); // Debug log to see plan structure
+          return (
+            <div key={plan._id} className="relative">
+              <UnifiedPlanCard
+                plan={plan}
+                viewMode={viewMode}
+                isPublic={plan.isPublic}
+              />
+              <div className="absolute top-3 left-3 z-10">{getStatusBadge(plan.status)}</div>
+              {plan.status === "pending" && (
+                <div className="absolute top-3 right-3 z-10 flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => handlePlanAction("approve", plan)}
+                    className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-md"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handlePlanAction("reject", plan)}
+                    className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 shadow-md"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+              {plan.status === "published" && (
+                <div className="absolute top-3 right-3 z-10 flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => handlePlanAction("feature", plan)}
+                    className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handlePlanAction("delete", plan)}
+                    className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 shadow-md"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+              {(plan.status === "rejected" || plan.status === "featured") && (
+                <div className="absolute top-3 right-3 z-10 flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handlePlanAction("delete", plan)}
+                    className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 shadow-md"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   )
@@ -596,11 +762,19 @@ const AdminDashboardPage = () => {
             <option value="resolved">Resolved</option>
             <option value="high">High Priority</option>
           </select>
+          <Button 
+            onClick={refreshData}
+            variant="outline"
+            className="border-purple-200 hover:bg-purple-50 text-purple-700"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
         </div>
       </div>
 
       <div className="space-y-4">
-        {feedback.map((item) => (
+        {getFilteredFeedback().map((item) => (
           <Card
             key={item._id}
             className="border border-slate-200/50 dark:border-gray-700/50 shadow-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md hover:shadow-xl transition-all duration-300"
@@ -643,6 +817,23 @@ const AdminDashboardPage = () => {
                       <CheckCircle className="w-4 h-4 mr-2" />
                       Resolve
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleFeedbackAction("priority", item)}
+                      className="border-orange-200 hover:bg-orange-50 text-orange-700"
+                    >
+                      <Filter className="w-4 h-4 mr-2" />
+                      Priority
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleFeedbackAction("delete", item)}
+                      className="border-red-200 hover:bg-red-50 text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -652,6 +843,29 @@ const AdminDashboardPage = () => {
       </div>
     </div>
   )
+
+  // Export functionality
+  const exportUsers = () => {
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + "ID,First Name,Last Name,Email,Status,Subscription,Created At,Last Login\n"
+      + getFilteredUsers().map(user => 
+          `${user._id},${user.firstName},${user.lastName},${user.email},${user.status},${user.subscription || 'free'},${user.createdAt},${user.lastLogin || 'Never'}`
+        ).join("\n")
+    
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement("a")
+    link.setAttribute("href", encodedUri)
+    link.setAttribute("download", `users_export_${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  // Handle admin actions
+  const handleAddCommunityPlan = () => {
+    // This could open a modal or navigate to a plan creation page
+    alert('Feature to add community plan will be implemented. For now, users can create plans that admins can approve.')
+  }
 
   const tabs = [
     { id: "overview", label: "Overview", icon: BarChart3 },

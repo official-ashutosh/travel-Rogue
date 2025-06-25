@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
+import { useAuth } from "../contexts/AuthContext.jsx"
 import {
   Search,
   Grid,
@@ -25,6 +26,7 @@ import GeneratePlanButton from "../components/GeneratePlanButton.jsx"
 import { plansAPI, dashboardAPI, userAPI } from "../lib/api.js"
 
 const DashboardPage = () => {
+  const { user } = useAuth()
   const [searchPlanText, setSearchPlanText] = useState("")
   const [plans, setPlans] = useState([])
   const [communityPlans, setCommunityPlans] = useState([])
@@ -227,10 +229,9 @@ const DashboardPage = () => {
                 <option value="recent">Most Recent</option>
                 <option value="alphabetical">A-Z</option>
                 <option value="budget">Budget</option>
-                <option value="rating">Rating</option>
               </select>
 
-              <GeneratePlanButton />
+              {user?.role === 'user' && <GeneratePlanButton />}
             </div>
           </div>
         </div>
