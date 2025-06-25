@@ -23,7 +23,7 @@ import { Card, CardContent } from "../components/ui/Card.jsx"
 import UnifiedPlanCard from "../components/ui/UnifiedPlanCard.jsx"
 import ModernNoPlans from "../components/dashboard/ModernNoPlans.jsx"
 import GeneratePlanButton from "../components/GeneratePlanButton.jsx"
-import { plansAPI, dashboardAPI, userAPI } from "../lib/api.js"
+import { plansAPI, dashboardAPI, userAPI, feedbackAPI } from "../lib/api.js"
 
 const DashboardPage = () => {
   const { user } = useAuth()
@@ -35,6 +35,7 @@ const DashboardPage = () => {
   const [viewMode, setViewMode] = useState("grid")
   const [sortBy, setSortBy] = useState("recent")
   const [dashboardStats, setDashboardStats] = useState(null)
+  const [userFeedback, setUserFeedback] = useState([])
   const [userCredits, setUserCredits] = useState({
     credits: 0,
     freeCredits: 0,
@@ -46,12 +47,14 @@ const DashboardPage = () => {
     fetchCommunityPlans()
     fetchDashboardStats()
     fetchUserCredits()
+    fetchUserFeedback()
   }, [])
 
   // Refresh credits when focus returns to window (user might have used AI elsewhere)
   useEffect(() => {
     const handleFocus = () => {
       fetchUserCredits()
+      fetchUserFeedback()
     }
     
     window.addEventListener('focus', handleFocus)
@@ -78,6 +81,17 @@ const DashboardPage = () => {
       })
     } catch (error) {
       console.error("Error fetching user credits:", error)
+    }
+  }
+
+  const fetchUserFeedback = async () => {
+    try {
+      const response = await feedbackAPI.getUserFeedback()
+      const feedbackData = response.data.data?.feedback || response.data.feedback || []
+      setUserFeedback(feedbackData)
+    } catch (error) {
+      console.error("Error fetching user feedback:", error)
+      setUserFeedback([])
     }
   }
   const fetchPlans = async () => {
@@ -322,7 +336,7 @@ const DashboardPage = () => {
                 <div>
                   <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Feedback</p>
                   <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
-                    {dashboardStats?.feedbackCount || "0"}
+                    {userFeedback.length}
                   </p>
                 </div>
                 <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300">

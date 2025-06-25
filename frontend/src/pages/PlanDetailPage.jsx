@@ -644,9 +644,38 @@ const PlanDetailPage = ({ isPublic = false }) => {
                   </div>
                 ) : plan.besttimetovisit ? (
                   <div className="space-y-4">
-                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                      {plan.besttimetovisit}
-                    </p>
+                    {typeof plan.besttimetovisit === 'string' ? (
+                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                        {plan.besttimetovisit}
+                      </p>
+                    ) : (
+                      <div className="space-y-4">
+                        {plan.besttimetovisit.overview && (
+                          <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                            {plan.besttimetovisit.overview}
+                          </p>
+                        )}
+                        {plan.besttimetovisit.seasons && plan.besttimetovisit.seasons.length > 0 && (
+                          <div className="mt-4">
+                            <h4 className="font-medium text-slate-800 dark:text-slate-200 mb-3">
+                              Seasonal Information:
+                            </h4>
+                            <div className="grid gap-3">
+                              {plan.besttimetovisit.seasons.map((season, index) => (
+                                <div key={index} className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
+                                  <h5 className="font-medium text-slate-700 dark:text-slate-300">
+                                    {season.season} ({season.months})
+                                  </h5>
+                                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                                    {season.description}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-slate-500 text-center py-8">No information about the best time to visit.</p>
@@ -1031,15 +1060,105 @@ const PlanDetailPage = ({ isPublic = false }) => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400 p-4 bg-gradient-to-r from-sky-50/50 to-blue-50/50 dark:from-sky-950/30 dark:to-blue-950/30 rounded-xl border border-sky-200/50 dark:border-sky-800/30 backdrop-blur-sm">
-                  <div className="w-8 h-8 bg-gradient-to-br from-sky-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Cloud className="w-4 h-4 text-white" />
+                {plan.weatherInfo ? (
+                  <div className="space-y-6">
+                    {/* Current Weather */}
+                    {plan.weatherInfo.current && (
+                      <div className="bg-gradient-to-r from-sky-50/50 to-blue-50/50 dark:from-sky-950/30 dark:to-blue-950/30 rounded-xl p-4 border border-sky-200/50 dark:border-sky-800/30">
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">Current Weather</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-sky-600 dark:text-sky-400">
+                              {plan.weatherInfo.current.temperature}°C
+                            </div>
+                            <div className="text-sm text-slate-600 dark:text-slate-400">Temperature</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-lg font-semibold text-slate-700 dark:text-slate-300">
+                              {plan.weatherInfo.current.feels_like}°C
+                            </div>
+                            <div className="text-sm text-slate-600 dark:text-slate-400">Feels like</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-lg font-semibold text-slate-700 dark:text-slate-300">
+                              {plan.weatherInfo.current.humidity}%
+                            </div>
+                            <div className="text-sm text-slate-600 dark:text-slate-400">Humidity</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-lg font-semibold text-slate-700 dark:text-slate-300">
+                              {plan.weatherInfo.current.wind_speed} m/s
+                            </div>
+                            <div className="text-sm text-slate-600 dark:text-slate-400">Wind Speed</div>
+                          </div>
+                        </div>
+                        <div className="mt-3 text-center">
+                          <div className="text-slate-700 dark:text-slate-300 capitalize">
+                            {plan.weatherInfo.current.description}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Weather Forecast */}
+                    {plan.weatherInfo.forecast && plan.weatherInfo.forecast.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">5-Day Forecast</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                          {plan.weatherInfo.forecast.map((day, index) => (
+                            <div key={index} className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3 border border-slate-200/50 dark:border-gray-700/50 text-center">
+                              <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                                {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                              </div>
+                              <div className="text-lg font-bold text-slate-800 dark:text-slate-200">
+                                {day.temperature.max}° / {day.temperature.min}°
+                              </div>
+                              <div className="text-xs text-slate-600 dark:text-slate-400 capitalize mt-1">
+                                {day.description}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Seasonal Information */}
+                    {plan.weatherInfo.seasonal && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">Seasonal Weather</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {Object.entries(plan.weatherInfo.seasonal).map(([season, info]) => (
+                            <div key={season} className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 border border-slate-200/50 dark:border-gray-700/50">
+                              <div className="font-semibold text-slate-800 dark:text-slate-200 capitalize mb-2">
+                                {season}
+                              </div>
+                              <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">
+                                {info.temperature_range}
+                              </div>
+                              <div className="text-sm text-slate-700 dark:text-slate-300 mb-2">
+                                {info.description}
+                              </div>
+                              {info.activities && info.activities.length > 0 && (
+                                <div className="text-xs text-slate-600 dark:text-slate-400">
+                                  <strong>Activities:</strong> {info.activities.join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <p>
-                    Weather information will be displayed here. This can include seasonal weather patterns, temperature
-                    ranges, and weather-related travel tips.
-                  </p>
-                </div>
+                ) : (
+                  <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400 p-4 bg-gradient-to-r from-sky-50/50 to-blue-50/50 dark:from-sky-950/30 dark:to-blue-950/30 rounded-xl border border-sky-200/50 dark:border-sky-800/30 backdrop-blur-sm">
+                    <div className="w-8 h-8 bg-gradient-to-br from-sky-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Cloud className="w-4 h-4 text-white" />
+                    </div>
+                    <p>
+                      Weather information is not available for this plan. Weather data is automatically generated for AI-created plans.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
