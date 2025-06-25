@@ -19,7 +19,7 @@ import { Button } from "../components/ui/Button.jsx"
 import { Input } from "../components/ui/Input.jsx"
 import { Badge } from "../components/ui/Badge.jsx"
 import { Card, CardContent } from "../components/ui/Card.jsx"
-import ModernPlanCard from "../components/dashboard/ModernPlanCard.jsx"
+import UnifiedPlanCard from "../components/ui/UnifiedPlanCard.jsx"
 import ModernNoPlans from "../components/dashboard/ModernNoPlans.jsx"
 import GeneratePlanButton from "../components/GeneratePlanButton.jsx"
 import { plansAPI, dashboardAPI, userAPI } from "../lib/api.js"
@@ -33,13 +33,27 @@ const DashboardPage = () => {
   const [viewMode, setViewMode] = useState("grid")
   const [sortBy, setSortBy] = useState("recent")
   const [dashboardStats, setDashboardStats] = useState(null)
-  const [userCredits, setUserCredits] = useState(0)
+  const [userCredits, setUserCredits] = useState({
+    credits: 0,
+    freeCredits: 0,
+    totalCredits: 0
+  })
 
   useEffect(() => {
     fetchPlans()
     fetchCommunityPlans()
     fetchDashboardStats()
     fetchUserCredits()
+  }, [])
+
+  // Refresh credits when focus returns to window (user might have used AI elsewhere)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchUserCredits()
+    }
+    
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
   }, [])
 
   const fetchDashboardStats = async () => {
@@ -54,7 +68,12 @@ const DashboardPage = () => {
   const fetchUserCredits = async () => {
     try {
       const response = await userAPI.getCredits()
-      setUserCredits(response.data.credits || 0)
+      const creditsData = response.data.data || response.data
+      setUserCredits({
+        credits: creditsData.credits || 0,
+        freeCredits: creditsData.freeCredits || 0,
+        totalCredits: creditsData.totalCredits || (creditsData.credits || 0) + (creditsData.freeCredits || 0)
+      })
     } catch (error) {
       console.error("Error fetching user credits:", error)
     }
@@ -227,7 +246,14 @@ const DashboardPage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-blue-100 text-sm font-medium">AI Credits</p>
-                  <p className="text-2xl font-bold">{userCredits}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-2xl font-bold">{userCredits.totalCredits}</p>
+                    {userCredits.freeCredits > 0 && (
+                      <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
+                        {userCredits.freeCredits} free
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                   <CreditCard className="h-5 w-5 text-white" />
@@ -356,7 +382,11 @@ const DashboardPage = () => {
                       className="animate-fade-in-up"
                       style={{ animationDelay: `${index * 100}ms` }}
                     >
-                      <ModernPlanCard plan={{ ...plan, _id: plan.id || plan._id || "" }} viewMode={viewMode} />
+                      <UnifiedPlanCard 
+                        plan={{ ...plan, _id: plan.id || plan._id || "" }} 
+                        viewMode={viewMode} 
+                        showEditDelete={true}
+                      />
                     </div>
                   ))}
                 </div>
@@ -393,7 +423,7 @@ const DashboardPage = () => {
                       className="animate-fade-in-up"
                       style={{ animationDelay: `${(index + 3) * 100}ms` }}
                     >
-                      <ModernPlanCard
+                      <UnifiedPlanCard
                         plan={{ ...plan, _id: plan.id || plan._id || "" }}
                         isPublic={true}
                         viewMode={viewMode}

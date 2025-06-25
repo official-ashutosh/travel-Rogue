@@ -4,7 +4,7 @@ import { Button } from '../components/ui/Button.jsx';
 import { Card } from '../components/ui/Card.jsx';
 import { Input } from '../components/ui/Input.jsx';
 import { Badge } from '../components/ui/Badge.jsx';
-import ModernPlanCard from '../components/dashboard/ModernPlanCard.jsx';
+import UnifiedPlanCard from '../components/ui/UnifiedPlanCard.jsx';
 import { cn } from '../lib/utils.js';
 
 // Empty Plans Illustration Component
@@ -527,7 +527,7 @@ const CommunityPlansPage = () => {
                 ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6"
                 : "space-y-4"
             }>              {filteredResults.map((plan) => (
-                <ModernPlanCard 
+                <UnifiedPlanCard 
                   key={plan.id || plan._id} 
                   plan={plan} 
                   isPublic={true}

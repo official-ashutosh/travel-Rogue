@@ -2,11 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { getDashboardStats, getAdminDashboardStats } = require('../controllers/dashboardController');
 const auth = require('../middleware/auth');
+const adminOnly = require('../middleware/adminOnly');
 
 // Protected routes
 router.get('/stats', auth, getDashboardStats);
 
-// Admin routes (add admin middleware)
-router.get('/admin/stats', auth, getAdminDashboardStats); // Add admin middleware
+// Admin routes
+router.get('/admin/stats', auth, adminOnly, getAdminDashboardStats);
 
 module.exports = router;

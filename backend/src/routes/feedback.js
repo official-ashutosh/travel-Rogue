@@ -9,15 +9,16 @@ const {
   getPlanFeedback
 } = require('../controllers/feedbackController');
 const auth = require('../middleware/auth');
+const adminOnly = require('../middleware/adminOnly');
 
 // Protected routes
 router.post('/', auth, createFeedback);
 router.get('/my-feedback', auth, getUserFeedback);
 router.get('/plan/:planId', auth, getPlanFeedback);
 
-// Admin routes (add admin middleware)
-router.get('/all', auth, getAllFeedback); // Add admin middleware
-router.put('/:feedbackId', auth, updateFeedback); // Add admin middleware
+// Admin routes
+router.get('/all', auth, adminOnly, getAllFeedback);
+router.put('/:feedbackId', auth, adminOnly, updateFeedback);
 
 router.delete('/:feedbackId', auth, deleteFeedback);
 

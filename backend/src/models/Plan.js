@@ -127,6 +127,63 @@ const planSchema = new mongoose.Schema({
   views: {
     type: Number,
     default: 0
+  },
+  rating: {
+    type: Number,
+    default: null,
+    min: 1,
+    max: 5
+  },
+  budget: {
+    type: Number,
+    default: null
+  },
+  estimatedBudget: {
+    type: Number,
+    default: null
+  },
+  totalBudget: {
+    type: Number,
+    default: null
+  },
+  tags: [{
+    type: String
+  }],
+  travelers: {
+    type: Number,
+    default: null
+  },
+  groupSize: {
+    type: Number,
+    default: null
+  },
+  numberOfTravelers: {
+    type: Number,
+    default: null
+  },
+  fromdate: {
+    type: Date,
+    default: null
+  },
+  todate: {
+    type: Date,
+    default: null
+  },
+  fromDate: {
+    type: Date,
+    default: null
+  },
+  toDate: {
+    type: Date,
+    default: null
+  },
+  startdate: {
+    type: Date,
+    default: null
+  },
+  enddate: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

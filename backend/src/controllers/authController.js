@@ -52,7 +52,8 @@ const register = async (req, res, next) => {
           firstName: user.firstName,
           lastName: user.lastName,
           credits: user.credits,
-          freeCredits: user.freeCredits
+          freeCredits: user.freeCredits,
+          role: user.role
         },
         token
       })
@@ -107,7 +108,8 @@ const login = async (req, res, next) => {
           lastName: user.lastName,
           credits: user.credits,
           freeCredits: user.freeCredits,
-          lastLogin: user.lastLogin
+          lastLogin: user.lastLogin,
+          role: user.role
         },
         token
       })
@@ -134,7 +136,8 @@ const getMe = async (req, res, next) => {
           freeCredits: user.freeCredits,
           isEmailVerified: user.isEmailVerified,
           lastLogin: user.lastLogin,
-          createdAt: user.createdAt
+          createdAt: user.createdAt,
+          role: user.role
         }
       })
     );

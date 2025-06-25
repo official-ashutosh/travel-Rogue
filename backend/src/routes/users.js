@@ -13,6 +13,7 @@ const {
 
 // All Testing Done.
 const auth = require('../middleware/auth');
+const adminOnly = require('../middleware/adminOnly');
 
 // Protected routes
 router.get('/profile', auth, getProfile);
@@ -21,9 +22,9 @@ router.put('/profile', auth, updateProfile);
 router.get('/credits', auth, getCredits);
 router.post('/credits/reduce', auth, reduceCredits);
 
-// Admin routes (you would add admin middleware here)
-router.get('/all', auth, getAllUsers); // Add admin middleware
-router.post('/:userId/credits/add', auth, addCredits); // Add admin middleware
+// Admin routes
+router.get('/all', auth, adminOnly, getAllUsers);
+router.post('/:userId/credits/add', auth, adminOnly, addCredits);
 
 // Account management
 router.post('/deactivate', auth, deactivateAccount);

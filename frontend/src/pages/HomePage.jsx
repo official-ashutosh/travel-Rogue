@@ -450,7 +450,7 @@ const PricingSection = () => {
   const plans = [
     {
       name: "Starter",
-      credits: "1 Travel Credit",
+      credits: "2 AI Credit",
       originalPrice: "$10",
       price: "$0",
       description: "Perfect for exploring our platform",
@@ -458,7 +458,7 @@ const PricingSection = () => {
     },
     {
       name: "Explorer",
-      credits: "5 Travel Credits",
+      credits: "10 AI Credits",
       originalPrice: "$50",
       price: "$2",
       description: "Ideal for frequent travelers",

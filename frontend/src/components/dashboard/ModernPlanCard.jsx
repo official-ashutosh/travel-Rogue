@@ -35,7 +35,7 @@ const ModernPlanCard = ({ plan, isPublic = false, viewMode = 'grid' }) => {
     plan.fromdate || plan.fromDate || plan.startdate, 
     plan.todate || plan.toDate || plan.enddate
   );
-    const linkTo = isPublic ? `/plans/${plan.id || plan._id}/community-plan` : `/plans/${plan.id || plan._id}/plan`;
+    const linkTo = isPublic ? `/plans/${plan.id || plan._id}/community-plan` : `/plans/${plan.id || plan._id}`;
   const navigationState = { plan }; // Pass plan data through router state
 
   if (viewMode === 'list') {

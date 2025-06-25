@@ -41,19 +41,19 @@ function App() {
         {/* Auth routes */}
         <Route 
           path="/login" 
-          element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} 
+          element={user ? (user.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />) : <LoginPage />} 
         />
         <Route 
           path="/signup" 
-          element={user ? <Navigate to="/dashboard" replace /> : <SignupPage />} 
+          element={user ? (user.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />) : <SignupPage />} 
         />
         <Route 
           path="/forgot-password" 
-          element={user ? <Navigate to="/dashboard" replace /> : <ForgotPasswordPage />} 
+          element={user ? (user.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />) : <ForgotPasswordPage />} 
         />
         <Route 
           path="/reset-password/:token" 
-          element={user ? <Navigate to="/dashboard" replace /> : <ResetPasswordPage />} 
+          element={user ? (user.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />) : <ResetPasswordPage />} 
         />
         
         {/* Protected routes */}

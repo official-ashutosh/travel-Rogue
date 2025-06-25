@@ -152,33 +152,61 @@ const parseGeminiResponse = (text) => {
   try {
     // Clean the response text
     let cleanedText = text.trim();
-    
     // Remove any markdown code blocks if present
     cleanedText = cleanedText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-    
     // Remove any leading/trailing text that's not JSON
     const jsonStart = cleanedText.indexOf('{');
     const jsonEnd = cleanedText.lastIndexOf('}') + 1;
-    
     if (jsonStart !== -1 && jsonEnd !== -1) {
       cleanedText = cleanedText.substring(jsonStart, jsonEnd);
     }
-
     const parsedData = JSON.parse(cleanedText);
-    
     // Validate that we have the required structure
     if (!parsedData.abouttheplace || !parsedData.adventuresactivitiestodo) {
       throw new Error('Invalid response structure from Gemini');
     }
-
-    return parsedData;
-
+    // --- Normalize to Plan model schema ---
+    return {
+      isGeneratedUsingAI: true,
+      nameoftheplace: parsedData.nameoftheplace || '',
+      userPrompt: parsedData.userPrompt || '',
+      abouttheplace: parsedData.abouttheplace || '',
+      adventuresactivitiestodo: parsedData.adventuresactivitiestodo || [],
+      topplacestovisit: parsedData.topplacestovisit || [],
+      packingchecklist: parsedData.packingchecklist || [],
+      localcuisinerecommendations: parsedData.localcuisinerecommendations || [],
+      besttimetovisit: parsedData.besttimetovisit || '',
+      itinerary: parsedData.itinerary || [],
+      imageUrl: parsedData.imageUrl || '',
+      isPublic: parsedData.isPublic || false,
+      likes: parsedData.likes || 0,
+      views: parsedData.views || 0,
+      rating: parsedData.rating || null,
+      budget: parsedData.budget || null,
+      estimatedBudget: parsedData.estimatedBudget || null,
+      totalBudget: parsedData.totalBudget || null,
+      tags: parsedData.tags || [],
+      travelers: parsedData.travelers || null,
+      groupSize: parsedData.groupSize || null,
+      numberOfTravelers: parsedData.numberOfTravelers || null,
+      fromdate: parsedData.fromdate || null,
+      todate: parsedData.todate || null,
+      fromDate: parsedData.fromDate || null,
+      toDate: parsedData.toDate || null,
+      startdate: parsedData.startdate || null,
+      enddate: parsedData.enddate || null,
+      // fallback for any extra fields
+      ...parsedData
+    };
   } catch (error) {
     console.error('Error parsing Gemini response:', error);
     console.error('Raw response:', text);
     
     // Return fallback data if parsing fails
     return {
+      isGeneratedUsingAI: true,
+      nameoftheplace: '',
+      userPrompt: '',
       abouttheplace: "A wonderful destination with rich culture and beautiful scenery.",
       adventuresactivitiestodo: [
         "Explore the main attractions",
@@ -232,7 +260,25 @@ const parseGeminiResponse = (text) => {
             ]
           }
         }
-      ]
+      ],
+      imageUrl: '',
+      isPublic: false,
+      likes: 0,
+      views: 0,
+      rating: null,
+      budget: null,
+      estimatedBudget: null,
+      totalBudget: null,
+      tags: [],
+      travelers: null,
+      groupSize: null,
+      numberOfTravelers: null,
+      fromdate: null,
+      todate: null,
+      fromDate: null,
+      toDate: null,
+      startdate: null,
+      enddate: null
     };
   }
 };

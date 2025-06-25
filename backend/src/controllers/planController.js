@@ -80,6 +80,18 @@ const createPlan = async (req, res, next) => {
         // Merge AI generated data with the plan
         Object.assign(newPlan, aiGeneratedData);
         
+        // Ensure schema consistency - add default values for UI consistency
+        newPlan.views = newPlan.views || 0;
+        newPlan.likes = newPlan.likes || 0;
+        newPlan.rating = newPlan.rating || null;
+        newPlan.budget = newPlan.budget || null;
+        newPlan.tags = newPlan.tags || [];
+        newPlan.travelers = newPlan.travelers || groupSize || null;
+        
+        // Set dates if provided
+        if (startDate) newPlan.fromdate = new Date(startDate);
+        if (endDate) newPlan.todate = new Date(endDate);
+        
         // Update content generation state to show all content is generated
         newPlan.contentGenerationState = {
           imagination: true,

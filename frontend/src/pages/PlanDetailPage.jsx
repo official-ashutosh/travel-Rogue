@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   Edit,
   Share2,
+  Trash2,
   Calendar,
   DollarSign,
   Eye,
@@ -33,6 +34,24 @@ const PlanDetailPage = ({ isPublic = false }) => {
   const [plan, setPlan] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("overview")
+  const [deleteLoading, setDeleteLoading] = useState(false)
+
+  const handleDeletePlan = async () => {
+    if (!window.confirm('Are you sure you want to delete this plan? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setDeleteLoading(true);
+      await plansAPI.deletePlan(plan.id || plan._id);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error deleting plan:', error);
+      alert('Failed to delete plan. Please try again.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -111,7 +130,7 @@ const PlanDetailPage = ({ isPublic = false }) => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 border border-blue-200/50 dark:border-blue-800/30 rounded-xl backdrop-blur-sm">
                     <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
-                      {plan.duration || "N/A"}
+                      {plan.itinerary?.length || "N/A"} days
                     </div>
                     <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Duration</div>
                   </div>
@@ -186,37 +205,13 @@ const PlanDetailPage = ({ isPublic = false }) => {
               </CardHeader>
               <CardContent className="p-6">
                 {plan.besttimetovisit ? (
-                  <div className="space-y-6">
+                  <div className="space-y-4">
                     <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                      {plan.besttimetovisit.overview}
-                    </p>                    <div className="grid gap-4 md:grid-cols-2">
-                      {Array.isArray(plan.besttimetovisit.seasons) ? plan.besttimetovisit.seasons.map((season, index) => (
-                        <div
-                          key={index}
-                          className="p-4 border border-slate-200/50 dark:border-gray-700/50 rounded-xl bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-800/50 dark:to-blue-950/20 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300"
-                        >
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                              <Calendar className="w-3 h-3 text-white" />
-                            </div>
-                            <h3 className="font-semibold text-slate-900 dark:text-white">{season.season}</h3>
-                            <span className="text-xs text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded-full border border-blue-200/50 dark:border-blue-800/30">
-                              {season.months}
-                            </span>
-                          </div>
-                          <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
-                            {season.description}
-                          </p>
-                        </div>
-                      )) : (
-                        <div className="col-span-2 text-center text-slate-500 py-4">
-                          No seasonal information available
-                        </div>
-                      )}
-                    </div>
+                      {plan.besttimetovisit}
+                    </p>
                   </div>
                 ) : (
-                  <p className="text-slate-500 text-center py-8">No seasonal information available.</p>
+                  <p className="text-slate-500 text-center py-8">No information about the best time to visit.</p>
                 )}
               </CardContent>
             </Card>
@@ -236,26 +231,46 @@ const PlanDetailPage = ({ isPublic = false }) => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                {plan.topplacestovisit?.length > 0 ? (                  <div className="space-y-4">
+                {plan.topplacestovisit?.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {Array.isArray(plan.topplacestovisit) ? plan.topplacestovisit.map((place, index) => (
                       <div
                         key={index}
-                        className="p-4 border border-slate-200/50 dark:border-gray-700/50 rounded-xl bg-gradient-to-br from-white to-emerald-50/30 dark:from-gray-800/50 dark:to-emerald-950/20 backdrop-blur-sm shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
+                        className="group p-4 border border-slate-200/50 dark:border-gray-700/50 rounded-xl bg-gradient-to-br from-white to-emerald-50/30 dark:from-gray-800/50 dark:to-emerald-950/20 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300"
                       >
-                        <div className="flex items-start gap-3">
-                          <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center mt-1 flex-shrink-0">
-                            <MapPin className="w-3 h-3 text-white" />
-                          </div>
+                        <div className="flex items-start justify-between gap-3">
                           <div className="flex-1">
-                            <h3 className="font-semibold text-slate-900 dark:text-white mb-2">{place.name}</h3>
-                            <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-2">
-                              {place.description}
-                            </p>
-                            {place.duration && (
-                              <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-full w-fit border border-emerald-200/50 dark:border-emerald-800/30">
-                                <Clock className="w-3 h-3" />
-                                <span>Recommended duration: {place.duration}</span>
-                              </div>                            )}
+                            <div className="flex items-start gap-3 mb-3">
+                              <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center mt-1 flex-shrink-0">
+                                <MapPin className="w-4 h-4 text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-slate-900 dark:text-white mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                  {place.name}
+                                </h3>
+                                {place.coordinates && (
+                                  <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-full w-fit border border-emerald-200/50 dark:border-emerald-800/30">
+                                    <Navigation className="w-3 h-3" />
+                                    <span>Lat: {place.coordinates.lat}, Lng: {place.coordinates.lng}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {place.coordinates && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-300"
+                                onClick={() => {
+                                  const url = `https://www.google.com/maps?q=${place.coordinates.lat},${place.coordinates.lng}&z=15`;
+                                  window.open(url, '_blank');
+                                }}
+                              >
+                                <MapPin className="w-4 h-4 mr-2" />
+                                View on Google Maps
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -584,15 +599,28 @@ const PlanDetailPage = ({ isPublic = false }) => {
               <Share2 className="w-4 h-4 mr-2" />
               Share
             </Button>
-            {!isPublic && (
-              <Button
-                variant="secondary"
-                size="sm"
-                className="bg-white/90 hover:bg-white text-slate-900 border-0 shadow-lg backdrop-blur-md"
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Edit
-              </Button>
+            {!isPublic && !plan.isGeneratedUsingAI && (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="bg-white/90 hover:bg-white text-slate-900 border-0 shadow-lg backdrop-blur-md"
+                  onClick={() => navigate('/plans/new', { state: { editPlan: plan } })}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={deleteLoading}
+                  className="bg-red-50/90 hover:bg-red-100 text-red-700 border-0 shadow-lg backdrop-blur-md"
+                  onClick={handleDeletePlan}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+              </>
             )}
           </div>
         </div>
