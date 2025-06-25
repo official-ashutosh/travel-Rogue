@@ -10,7 +10,7 @@ import {
   Plus
 } from 'lucide-react';
 import { useFeedback } from '../hooks/useApiHooks.js';
-const { feedbackAPI } = require('../lib/api.js');
+import { feedbackAPI } from '../lib/api.js';
 
 const FeedbackPage = () => {
   const {
@@ -44,19 +44,22 @@ const FeedbackPage = () => {
     }
   };
   useEffect(() => {
-    // fetch feeback of user from the backend
+    // fetch feedback of user from the backend
     const fetchFeedback = async () => {
       try {
         const res = await feedbackAPI.getUserFeedback();
-        console.log('Fetched feedback:', res.data.data.feedback);
-        setFeedback(res.data.data.feedback);
+        setFeedback(res.data.data?.feedback || res.data.feedback || []);
       } catch (err) {
         console.error('Error fetching feedback:', err);
+        // If token is invalid, the API interceptor will handle redirect
+        if (err.response?.status !== 401) {
+          setFeedback([]);
+        }
       }
     };
 
     fetchFeedback();
-  }, []);
+  }, [setFeedback]);
 
   const filteredFeedback = feedback.filter(item => {
     if (filter === 'my') return item.is_mine;

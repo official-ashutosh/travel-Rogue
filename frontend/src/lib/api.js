@@ -23,19 +23,30 @@ api.interceptors.request.use(
 );
 
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
+    // Only handle 401s for non-auth endpoints to avoid conflicts
     if (error.response?.status === 401) {
-      const isAuthRequest = error.config?.url?.includes('/auth/login') || 
-                           error.config?.url?.includes('/auth/register');
-        if (!isAuthRequest) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+      const url = error.config?.url || '';
+      
+      // Don't auto-redirect for auth endpoints - let AuthContext handle them
+      if (!url.includes('/auth/') && !url.includes('/login') && !url.includes('/register')) {
+        const currentPath = window.location.pathname;
+        
+        // Only clear and redirect if not already on auth pages
+        if (!['/login', '/signup', '/forgot-password', '/'].includes(currentPath)) {
+          console.log('API: Clearing expired token and redirecting');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          
+          // Use setTimeout to avoid immediate redirect conflicts
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 100);
+        }
       }
     }
+    
     return Promise.reject(error);
   }
 );

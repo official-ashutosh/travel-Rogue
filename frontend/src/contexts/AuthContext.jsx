@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { authAPI } from '../lib/api.js';
 
 const AuthContext = createContext(null);
@@ -7,20 +7,91 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const initializingRef = useRef(false);
+  const lastTokenCheck = useRef(0);
+
+  // Helper function to clear auth state
+  const clearAuthState = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setError(null);
+  };
+
   useEffect(() => {
     const initAuth = async () => {
+      // Prevent multiple simultaneous initializations
+      if (initializingRef.current) {
+        return;
+      }
+
+      // Debounce token checks (max once per 5 seconds)
+      const now = Date.now();
+      if (now - lastTokenCheck.current < 5000) {
+        setLoading(false);
+        return;
+      }
+
       try {
+        initializingRef.current = true;
+        lastTokenCheck.current = now;
+
         const token = localStorage.getItem('token');
-        if (token) {
-          const response = await authAPI.getMe();
-          setUser(response.data.data?.user || response.data.user || response.data);
+        const storedUser = localStorage.getItem('user');
+        
+        if (token && storedUser) {
+          try {
+            // Parse stored user first to avoid unnecessary API calls
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser); // Set user immediately to improve UX
+            
+            // Validate token with backend (with timeout)
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Token validation timeout')), 10000)
+            );
+            
+            const validationPromise = authAPI.getMe();
+            const response = await Promise.race([validationPromise, timeoutPromise]);
+            
+            const userData = response.data.data?.user || response.data.user || response.data;
+            setUser(userData);
+            
+            // Update stored user data if different
+            if (JSON.stringify(userData) !== storedUser) {
+              localStorage.setItem('user', JSON.stringify(userData));
+            }
+          } catch (error) {
+            console.error('Token validation failed:', error.message);
+            
+            // Only clear auth state if it's actually an auth error
+            if (error.response?.status === 401 || error.message.includes('token')) {
+              clearAuthState();
+            } else {
+              // For network errors, keep the user logged in with cached data
+              console.log('Network error during token validation, keeping cached user');
+              if (storedUser) {
+                try {
+                  setUser(JSON.parse(storedUser));
+                } catch (parseError) {
+                  console.error('Failed to parse stored user:', parseError);
+                  clearAuthState();
+                }
+              }
+            }
+          }
+        } else {
+          // No token or user data, ensure clean state
+          clearAuthState();
         }
       } catch (error) {
         console.error('Auth initialization failed:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        // Don't clear auth state for network errors
+        if (error.message.includes('auth') || error.message.includes('401')) {
+          clearAuthState();
+        }
       } finally {
         setLoading(false);
+        initializingRef.current = false;
       }
     };
 
@@ -29,20 +100,37 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setLoading(true);
+      setError(null);
+      
       const response = await authAPI.login({ email, password });
       const { token, user } = response.data.data || response.data;
       
+      if (!token || !user) {
+        throw new Error('Invalid response: missing token or user data');
+      }
+      
+      // Store auth data
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
       
+      // Update last token check to prevent immediate validation
+      lastTokenCheck.current = Date.now();
+      
       return { success: true, user };
     } catch (error) {
       console.error('Login failed:', error);
-      setError(error.response?.data?.message || 'Login failed');
+      const errorMessage = error.response?.data?.message || error.message || 'Login failed';
+      setError(errorMessage);
+      
+      // Only clear auth data if it's an actual auth error
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        clearAuthState();
+      }
+      
       return {
         success: false,
-        error: error.response?.data?.error || error.response?.data?.message || 'Login failed'
+        error: errorMessage
       };
     } finally {
       setLoading(false);
@@ -51,38 +139,43 @@ export const AuthProvider = ({ children }) => {
   const signup = async (userData) => {
     try {
       setLoading(true);
+      setError(null);
+      
       const response = await authAPI.register(userData);
       const { token, user } = response.data.data || response.data;
+      
+      if (!token || !user) {
+        throw new Error('Invalid response: missing token or user data');
+      }
       
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
       
+      // Update last token check
+      lastTokenCheck.current = Date.now();
+      
       return { success: true, user };
     } catch (error) {
       console.error('Signup failed:', error);
-      setError(error.response?.data?.message || 'Signup failed');
+      const errorMessage = error.response?.data?.message || error.message || 'Signup failed';
+      setError(errorMessage);
+      
       return {
         success: false,
-        error: error.response?.data?.error || error.response?.data?.message || 'Signup failed'
+        error: errorMessage
       };
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = async () => {
-    try {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setUser(null);
-      setError(null);
-      
-      // Redirect to home page
-      window.location.href = '/';
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+  const logout = () => {
+    clearAuthState();
+    // Reset token check timestamp
+    lastTokenCheck.current = 0;
+    // Force page reload to ensure clean state
+    window.location.href = '/';
   };
 
   const forgotPassword = async (email) => {
@@ -151,7 +244,8 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     changePassword,
     clearError,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    clearAuthState // Expose for manual cleanup if needed
   };
 
   return (

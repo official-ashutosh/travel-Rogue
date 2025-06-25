@@ -17,12 +17,13 @@ import {
 } from 'lucide-react';
 
 const Header = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef(null);
   
   const isHomePage = location.pathname === '/';
+  const isAuthenticated = !!user;
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -35,6 +36,36 @@ const Header = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Close menu when route changes
+  useEffect(() => {
+    setShowUserMenu(false);
+  }, [location]);
+
+  const handleSignOut = () => {
+    setShowUserMenu(false);
+    logout();
+  };
+
+  // Don't render auth buttons while loading
+  if (loading) {
+    return (
+      <header className={cn(
+        "w-full border-b border-border/40 z-50 sticky top-0",
+        "bg-background backdrop-blur supports-[backdrop-filter]:bg-background/60"
+      )}>
+        <nav className="lg:px-20 px-5 py-3 mx-auto relative">
+          <div className="flex justify-between w-full items-center gap-4 relative">
+            <Logo />
+            <div className="flex gap-4 justify-end items-center min-w-[180px]">
+              <ThemeDropdown />
+              <div className="w-20 h-8 bg-gray-200 animate-pulse rounded"></div>
+            </div>
+          </div>
+        </nav>
+      </header>
+    );
+  }
 
   const navLinks = [
     { id: 'how-it-works', text: 'How it works' },
@@ -76,11 +107,6 @@ const Header = () => {
       href: '/admin' 
     }] : [])
   ];
-
-  const handleSignOut = () => {
-    logout();
-    setShowUserMenu(false);
-  };
 
   return (
     <header
