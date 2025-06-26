@@ -1,46 +1,67 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const planSettingsSchema = new mongoose.Schema({  userId: {
-    type: String
+const PlanSettings = sequelize.define('PlanSettings', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  userId: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'userId'
+    }
   },
   planId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Plan'
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'plans',
+      key: 'id'
+    }
   },
   currencyCode: {
-    type: String,
-    default: 'USD',
-    uppercase: true
+    type: DataTypes.STRING,
+    defaultValue: 'USD'
   },
-  activityPreferences: [{
-    type: String,
-    trim: true
-  }],
+  activityPreferences: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
   fromDate: {
-    type: Date
+    type: DataTypes.DATE,
+    allowNull: true
   },
   toDate: {
-    type: Date
+    type: DataTypes.DATE,
+    allowNull: true
   },
   companion: {
-    type: String,
-    trim: true
-  },  isPublished: {
-    type: Boolean,
-    default: false
-  },budget: {
-    type: Number
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  isPublished: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  budget: {
+    type: DataTypes.FLOAT,
+    allowNull: true
   },
   accommodationType: {
-    type: String,
-    enum: ['hotel', 'hostel', 'airbnb', 'resort', 'other']
+    type: DataTypes.ENUM('hotel', 'hostel', 'airbnb', 'resort', 'other'),
+    allowNull: true
   },
   transportMode: {
-    type: String,
-    enum: ['flight', 'train', 'bus', 'car', 'bike', 'other']
+    type: DataTypes.ENUM('flight', 'train', 'bus', 'car', 'bike', 'other'),
+    allowNull: true
   }
 }, {
+  tableName: 'plan_settings',
   timestamps: true
 });
 
-module.exports = mongoose.model('PlanSettings', planSettingsSchema);
+module.exports = PlanSettings;

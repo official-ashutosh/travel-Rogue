@@ -3,12 +3,17 @@ const axios = require('axios');
 // Generate weather data for a plan based on location
 const generateWeatherDataForPlan = async (locationName) => {
   try {
-    if (!process.env.OPENWEATHER_API_KEY) {
-      console.warn('OpenWeather API key not configured, using mock weather data');
+    console.log('Generating weather data for:', locationName);
+    
+    if (!process.env.OPENWEATHER_API_KEY || process.env.OPENWEATHER_API_KEY === 'a5f2bbf9e0cd0082dc1dd6c267ee1b5b') {
+      console.warn('OpenWeather API key not configured or using default, using mock weather data');
       return generateMockWeatherData(locationName);
     }
 
     const apiKey = process.env.OPENWEATHER_API_KEY;
+    
+    // Add timeout to prevent hanging requests
+    const timeout = 5000; // 5 seconds
     
     // Get current weather
     const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(locationName)}&appid=${apiKey}&units=metric`;
@@ -17,8 +22,8 @@ const generateWeatherDataForPlan = async (locationName) => {
     const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(locationName)}&appid=${apiKey}&units=metric&cnt=40`;
     
     const [currentResponse, forecastResponse] = await Promise.all([
-      axios.get(currentWeatherUrl),
-      axios.get(forecastUrl)
+      axios.get(currentWeatherUrl, { timeout }),
+      axios.get(forecastUrl, { timeout })
     ]);
     
     const currentData = currentResponse.data;
@@ -29,6 +34,8 @@ const generateWeatherDataForPlan = async (locationName) => {
     
     // Generate seasonal data and tips based on location
     const seasonalData = generateSeasonalData(locationName);
+    
+    console.log('Weather data generated successfully for:', locationName);
     
     return {
       current: {
@@ -45,7 +52,7 @@ const generateWeatherDataForPlan = async (locationName) => {
     };
     
   } catch (error) {
-    console.error('Error fetching weather data:', error.message);
+    console.warn('Error fetching weather data, using mock data:', error.message);
     return generateMockWeatherData(locationName);
   }
 };

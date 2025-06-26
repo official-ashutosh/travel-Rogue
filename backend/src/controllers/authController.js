@@ -10,7 +10,7 @@ const register = async (req, res, next) => {
     const { email, password, firstName, lastName } = req.body;
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json(
         createResponse('error', 'User already exists with this email')
@@ -46,7 +46,7 @@ const register = async (req, res, next) => {
     res.status(201).json(
       createResponse('success', 'User registered successfully', {
         user: {
-          id: user._id,
+          id: user.id,
           userId: user.userId,
           email: user.email,
           firstName: user.firstName,
@@ -68,8 +68,10 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    // Check if user exists
-    const user = await User.findOne({ email }).select('+password');
+    // Check if user exists (include password for validation)
+    const user = await User.scope('withPassword').findOne({ 
+      where: { email }
+    });
     if (!user) {
       return res.status(401).json(
         createResponse('error', 'Invalid email or password')
@@ -92,8 +94,7 @@ const login = async (req, res, next) => {
     }
 
     // Update last login
-    user.lastLogin = new Date();
-    await user.save();
+    await user.update({ lastLogin: new Date() });
 
     // Generate token
     const token = generateToken(user.userId);
@@ -101,7 +102,7 @@ const login = async (req, res, next) => {
     res.json(
       createResponse('success', 'Login successful', {
         user: {
-          id: user._id,
+          id: user.id,
           userId: user.userId,
           email: user.email,
           firstName: user.firstName,
@@ -127,7 +128,7 @@ const getMe = async (req, res, next) => {
     res.json(
       createResponse('success', 'User retrieved successfully', {
         user: {
-          id: user._id,
+          id: user.id,
           userId: user.userId,
           email: user.email,
           firstName: user.firstName,
@@ -151,7 +152,7 @@ const requestPasswordReset = async (req, res, next) => {
   try {
     const { email } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(404).json(
         createResponse('error', 'User not found with this email')
@@ -160,10 +161,12 @@ const requestPasswordReset = async (req, res, next) => {
 
     // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
-    user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
-
-    await user.save();
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    
+    await user.update({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+    });
 
     // Send reset email
     try {
@@ -173,9 +176,10 @@ const requestPasswordReset = async (req, res, next) => {
         createResponse('success', 'Password reset email sent')
       );
     } catch (emailError) {
-      user.passwordResetToken = undefined;
-      user.passwordResetExpires = undefined;
-      await user.save();
+      await user.update({
+        passwordResetToken: null,
+        passwordResetExpires: null
+      });
       
       return res.status(500).json(
         createResponse('error', 'Failed to send password reset email')
@@ -195,8 +199,12 @@ const resetPassword = async (req, res, next) => {
     // Hash the token and find user
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
     const user = await User.findOne({
-      passwordResetToken: hashedToken,
-      passwordResetExpires: { $gt: Date.now() }
+      where: {
+        passwordResetToken: hashedToken,
+        passwordResetExpires: {
+          [require('sequelize').Op.gt]: new Date()
+        }
+      }
     });
 
     if (!user) {
@@ -207,11 +215,13 @@ const resetPassword = async (req, res, next) => {
 
     // Set new password
     const salt = await bcrypt.genSalt(12);
-    user.password = await bcrypt.hash(password, salt);
-    user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
-
-    await user.save();
+    const hashedPassword = await bcrypt.hash(password, salt);
+    
+    await user.update({
+      password: hashedPassword,
+      passwordResetToken: null,
+      passwordResetExpires: null
+    });
 
     // Generate new token
     const authToken = generateToken(user.userId);
@@ -233,7 +243,10 @@ const changePassword = async (req, res, next) => {
     const userId = req.userId;
 
     // Get user with password
-    const user = await User.findOne({ userId }).select('+password');
+    const user = await User.findOne({ 
+      where: { userId },
+      attributes: { include: ['password'] }
+    });
     if (!user) {
       return res.status(404).json(
         createResponse('error', 'User not found')
@@ -250,8 +263,8 @@ const changePassword = async (req, res, next) => {
 
     // Set new password
     const salt = await bcrypt.genSalt(12);
-    user.password = await bcrypt.hash(newPassword, salt);
-    await user.save();
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    await user.update({ password: hashedPassword });
 
     res.json(
       createResponse('success', 'Password changed successfully')

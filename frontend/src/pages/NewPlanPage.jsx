@@ -121,27 +121,69 @@ const NewPlanPage = ({ isEdit = false }) => {
   }
 
   const validateForm = () => {
-    if (!formData.nameoftheplace.trim()) {
+    // Check destination
+    if (!formData.nameoftheplace || !formData.nameoftheplace.trim()) {
       alert("Please enter a destination")
       return false
     }
+    
+    // Validate destination is not just spaces or special characters
+    if (formData.nameoftheplace.trim().length < 2) {
+      alert("Please enter a valid destination name")
+      return false
+    }
+    
+    // Check dates
     if (!formData.fromdate || !formData.todate) {
-      alert("Please select travel dates")
+      alert("Please select both departure and return dates")
       return false
     }
-    if (new Date(formData.fromdate) >= new Date(formData.todate)) {
-      alert("End date must be after start date")
+    
+    // Validate date format and values
+    const startDate = new Date(formData.fromdate)
+    const endDate = new Date(formData.todate)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Reset time to start of day
+    
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      alert("Please enter valid dates")
       return false
     }
+    
+    if (startDate < today) {
+      alert("Start date cannot be in the past")
+      return false
+    }
+    
+    if (endDate <= startDate) {
+      alert("Return date must be after departure date")
+      return false
+    }
+    
+    // Check if trip is too long (e.g., more than 365 days)
+    const tripDuration = (endDate - startDate) / (1000 * 60 * 60 * 24)
+    if (tripDuration > 365) {
+      alert("Trip duration cannot exceed 365 days")
+      return false
+    }
+    
+    // Validate budget if provided
+    if (formData.budget && (isNaN(formData.budget) || formData.budget < 0)) {
+      alert("Please enter a valid budget amount")
+      return false
+    }
+    
     return true
   }
 
   const handleSavePlan = async (withAI = false) => {
     if (!validateForm()) return;
+    
     setLoading(true);
+    
     try {
       const planData = {
-        nameoftheplace: formData.nameoftheplace,
+        nameoftheplace: formData.nameoftheplace.trim(),
         userPrompt: formData.abouttheplace || `I want to visit ${formData.nameoftheplace}`,
         isGeneratedUsingAI: withAI,
         startDate: formData.fromdate,
@@ -154,22 +196,51 @@ const NewPlanPage = ({ isEdit = false }) => {
             ? Math.ceil((new Date(formData.todate) - new Date(formData.fromdate)) / (1000 * 60 * 60 * 24))
             : null,
       };
+
+      console.log('Sending plan data:', planData);
+      
       let response;
       if (isEdit && planId) {
         response = await api.put(`/plans/${planId}`, planData);
       } else {
         response = await api.post("/plans", planData);
       }
+      
+      console.log('API Response:', response.data);
+      
       if (response.data.status === "success") {
+        // Show success message
+        alert(isEdit ? "Plan updated successfully!" : "Plan created successfully!");
+        
         setTimeout(() => {
           navigate("/dashboard?refresh=true");
         }, 500);
       } else {
         throw new Error(response.data.message || (isEdit ? "Failed to update plan" : "Failed to create plan"));
       }
+      
     } catch (error) {
       console.error(isEdit ? "Error updating plan:" : "Error creating plan:", error);
-      alert(error.response?.data?.message || error.message || (isEdit ? "Failed to update plan. Please try again." : "Failed to create plan. Please try again."));
+      
+      // More specific error handling
+      let errorMessage = isEdit ? "Failed to update plan. Please try again." : "Failed to create plan. Please try again.";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      // Handle specific error cases
+      if (errorMessage.includes('Insufficient credits')) {
+        errorMessage += '\n\nYou can either:\n• Create a manual plan (free)\n• Purchase credits for AI generation';
+      } else if (errorMessage.includes('AI service is not available')) {
+        errorMessage += '\n\nPlease try creating a manual plan instead.';
+      } else if (errorMessage.includes('Database connection')) {
+        errorMessage = 'Connection error. Please check your internet and try again.';
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

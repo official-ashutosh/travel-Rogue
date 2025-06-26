@@ -13,7 +13,10 @@ const auth = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findOne({ userId: decoded.userId }).select('-password');
+    const user = await User.findOne({ 
+      where: { userId: decoded.userId },
+      attributes: { exclude: ['password'] }
+    });
     
     if (!user) {
       return res.status(401).json({

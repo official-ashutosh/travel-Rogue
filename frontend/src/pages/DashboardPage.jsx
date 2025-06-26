@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext.jsx"
 import {
   Search,
@@ -27,6 +27,7 @@ import { plansAPI, dashboardAPI, userAPI, feedbackAPI } from "../lib/api.js"
 
 const DashboardPage = () => {
   const { user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [searchPlanText, setSearchPlanText] = useState("")
   const [plans, setPlans] = useState([])
   const [communityPlans, setCommunityPlans] = useState([])
@@ -49,6 +50,17 @@ const DashboardPage = () => {
     fetchUserCredits()
     fetchUserFeedback()
   }, [])
+
+  // Handle refresh parameter from URL (e.g., coming back from plan creation)
+  useEffect(() => {
+    const refreshParam = searchParams.get('refresh')
+    if (refreshParam === 'true') {
+      // Force refresh by clearing the parameter and refetching data
+      setSearchParams({})
+      fetchPlans()
+      fetchUserCredits()
+    }
+  }, [searchParams, setSearchParams])
 
   // Refresh credits when focus returns to window (user might have used AI elsewhere)
   useEffect(() => {

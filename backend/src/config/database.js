@@ -1,60 +1,106 @@
-const mongoose = require('mongoose');
+const { Sequelize } = require('sequelize');
+
+// Create sequelize instance
+const sequelize = new Sequelize(
+  process.env.DATABASE_URL || 
+  `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'akumar15'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'Travel-Rogue'}`,
+  {
+    dialect: 'postgres',
+    logging: process.env.ENABLE_SQL_LOGGING === 'true' ? console.log : false,
+    dialectOptions: {
+      ssl: process.env.DATABASE_URL ? {
+        require: true,
+        rejectUnauthorized: false
+      } : false
+    },
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    }
+  }
+);
 
 const connectDB = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/travel_rogue';
+    const databaseUrl = process.env.DATABASE_URL || 
+      `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'akumar15'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'Travel-Rogue'}`;
     
     console.log('\n' + '═'.repeat(55));
-    console.log('🔗 MongoDB Database Connection');
+    console.log('🔗 PostgreSQL Database Connection');
     console.log('═'.repeat(55));
-    console.log(`📍 URI: ${mongoUri}`);
+    console.log(`📍 URI: ${databaseUrl.replace(/:[^:@]*@/, ':****@')}`);
     console.log('═'.repeat(55));
 
-    const conn = await mongoose.connect(mongoUri);
+    await sequelize.authenticate();
     
-    console.log('✅ MongoDB connected successfully!');
-    console.log(`🗄️  Database: ${conn.connection.db.databaseName}`);
+    console.log('✅ PostgreSQL connected successfully!');
+    console.log(`🗄️  Database: ${process.env.DB_NAME || 'Travel-Rogue'}`);
     console.log('═'.repeat(55) + '\n');
 
-    // Handle connection events
-    mongoose.connection.on('error', (err) => {
-      console.error('MongoDB connection error:', err);
-    });
-
-    mongoose.connection.on('disconnected', () => {
-      console.log('MongoDB disconnected');
-    });
+    // Sync database models in dependency order
+    try {
+      // Import models to ensure they're loaded
+      const models = require('../models');
+      
+      // Create tables in dependency order
+      console.log('🔄 Creating tables in dependency order...');
+      
+      // 1. Create User table first (no dependencies)
+      await models.User.sync({ alter: false });
+      console.log('✅ User table ready');
+      
+      // 2. Create Plan table (depends on User)
+      await models.Plan.sync({ alter: false });
+      console.log('✅ Plan table ready');
+      
+      // 3. Create dependent tables
+      await Promise.all([
+        models.Access.sync({ alter: false }),
+        models.Expense.sync({ alter: false }),
+        models.Feedback.sync({ alter: false }),
+        models.Invite.sync({ alter: false }),
+        models.Payment.sync({ alter: false }),
+        models.PlanSettings.sync({ alter: false })
+      ]);
+      console.log('✅ All dependent tables ready');
+      
+      console.log('✅ Database tables synchronized!');
+    } catch (syncError) {
+      console.warn('⚠️  Individual table sync failed, trying full sync...');
+      await sequelize.sync({ alter: false });
+      console.log('✅ Database tables synchronized!');
+    }
 
     // Graceful close on app termination
     process.on('SIGINT', async () => {
-      await mongoose.connection.close();
-      console.log('MongoDB connection closed through app termination');
+      await sequelize.close();
+      console.log('PostgreSQL connection closed through app termination');
       process.exit(0);
     });
 
-    return conn;
+    return sequelize;
   } catch (error) {
-    console.error('❌ MongoDB connection failed:', error);
+    console.error('❌ PostgreSQL connection failed:', error);
     process.exit(1);
   }
 };
 
 const getDb = () => {
-  if (mongoose.connection.readyState !== 1) {
-    throw new Error('Database not connected. Call connectDB first.');
-  }
-  return mongoose.connection.db;
+  return sequelize;
 };
 
 const closeConnection = async () => {
-  if (mongoose.connection.readyState === 1) {
-    await mongoose.connection.close();
-    console.log('MongoDB connection closed.');
+  if (sequelize) {
+    await sequelize.close();
+    console.log('PostgreSQL connection closed.');
   }
 };
 
 module.exports = {
   connectDB,
   getDb,
-  closeConnection
+  closeConnection,
+  sequelize
 };

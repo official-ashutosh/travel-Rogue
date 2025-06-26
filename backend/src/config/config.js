@@ -3,11 +3,12 @@ module.exports = {
   env: process.env.NODE_ENV || 'development',
   
   database: {
-    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/travel-planner-ai',
-    options: {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    }
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    name: process.env.DB_NAME || 'Travel-Rogue',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'akumar15',
+    url: process.env.DATABASE_URL || `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'akumar15'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'Travel-Rogue'}`
   },
   
   jwt: {

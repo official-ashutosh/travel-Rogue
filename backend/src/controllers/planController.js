@@ -1,9 +1,8 @@
-const Plan = require('../models/Plan');
-const Access = require('../models/Access');
-const PlanSettings = require('../models/PlanSettings');
-const User = require('../models/User');
+const { Op } = require('sequelize');
+const { Plan, User, Access, PlanSettings } = require('../models');
 const { createResponse, paginate } = require('../utils/helpers');
 const { generateCompletePlanWithGemini } = require('../services/geminiService');
+const { generateWeatherDataForPlan } = require('../services/weatherService');
 
 // Enhanced plan creation with comprehensive data collection
 const createPlan = async (req, res, next) => {
@@ -11,8 +10,7 @@ const createPlan = async (req, res, next) => {
     const { 
       nameoftheplace,
       userPrompt,
-      isGeneratedUsingAI = true,
-      // New fields for better AI generation
+      isGeneratedUsingAI = false,
       startDate,
       endDate,
       numberOfDays,
@@ -25,29 +23,49 @@ const createPlan = async (req, res, next) => {
     } = req.body;
     const userId = req.userId;
 
+    console.log('Creating plan for user:', userId);
+    console.log('Plan data:', { nameoftheplace, isGeneratedUsingAI, startDate, endDate });
+
     // Validate required fields
-    if (!nameoftheplace || !userPrompt) {
+    if (!nameoftheplace) {
       return res.status(400).json(
-        createResponse('error', 'Place name and user prompt are required')
+        createResponse('error', 'Destination is required')
       );
     }
 
-    // Check if user has credits for AI generation
-    if (isGeneratedUsingAI) {
-      const user = await User.findOne({ userId });
-      if (user.freeCredits === 0 && user.credits === 0) {
-        return res.status(400).json(
-          createResponse('error', 'Insufficient credits for AI generation')
-        );
-      }
+    if (!userId) {
+      return res.status(401).json(
+        createResponse('error', 'User authentication required')
+      );
     }
 
-    // Create initial plan
-    const newPlan = new Plan({
-      nameoftheplace,
-      userPrompt,
+    // Check if user exists and has credits for AI generation
+    const user = await User.findOne({ where: { userId } });
+    if (!user) {
+      return res.status(404).json(
+        createResponse('error', 'User not found')
+      );
+    }
+
+    if (isGeneratedUsingAI && user.freeCredits === 0 && user.credits === 0) {
+      return res.status(400).json(
+        createResponse('error', 'Insufficient credits for AI generation. Please purchase credits or create a manual plan.')
+      );
+    }
+
+    // Prepare plan data with safe defaults
+    const planData = {
+      nameoftheplace: nameoftheplace.trim(),
+      userPrompt: userPrompt || `I want to visit ${nameoftheplace}`,
       userId,
       isGeneratedUsingAI,
+      abouttheplace: '',
+      adventuresactivitiestodo: [],
+      topplacestovisit: [],
+      packingchecklist: [],
+      localcuisinerecommendations: [],
+      besttimetovisit: '',
+      itinerary: {},
       contentGenerationState: {
         imagination: false,
         abouttheplace: false,
@@ -57,15 +75,54 @@ const createPlan = async (req, res, next) => {
         localcuisinerecommendations: false,
         packingchecklist: false,
         besttimetovisit: false
+      },
+      views: 0,
+      likes: 0,
+      rating: null,
+      budget: null,
+      tags: interests || [],
+      travelers: groupSize || 1,
+      groupSize: groupSize || 1,
+      isPublic: false,
+      weatherData: null
+    };
+
+    // Set dates if provided
+    if (startDate) {
+      try {
+        planData.startDate = new Date(startDate);
+      } catch (dateError) {
+        return res.status(400).json(
+          createResponse('error', 'Invalid start date format')
+        );
       }
-    });
+    }
+    
+    if (endDate) {
+      try {
+        planData.endDate = new Date(endDate);
+      } catch (dateError) {
+        return res.status(400).json(
+          createResponse('error', 'Invalid end date format')
+        );
+      }
+    }
 
     // If AI generation is requested, generate complete plan data
-    if (isGeneratedUsingAI && process.env.GEMINI_API_KEY) {
+    if (isGeneratedUsingAI) {
       try {
+        console.log('Starting AI generation for plan...');
+        
+        // Check if Gemini API key is available
+        if (!process.env.GEMINI_API_KEY) {
+          return res.status(500).json(
+            createResponse('error', 'AI service is not available. Please create a manual plan.')
+          );
+        }
+
         const aiGeneratedData = await generateCompletePlanWithGemini({
           nameoftheplace,
-          userPrompt,
+          userPrompt: userPrompt || `I want to visit ${nameoftheplace}`,
           startDate,
           endDate,
           numberOfDays,
@@ -78,22 +135,25 @@ const createPlan = async (req, res, next) => {
         });
 
         // Merge AI generated data with the plan
-        Object.assign(newPlan, aiGeneratedData);
+        Object.assign(planData, aiGeneratedData);
         
-        // Ensure schema consistency - add default values for UI consistency
-        newPlan.views = newPlan.views || 0;
-        newPlan.likes = newPlan.likes || 0;
-        newPlan.rating = newPlan.rating || null;
-        newPlan.budget = newPlan.budget || null;
-        newPlan.tags = newPlan.tags || [];
-        newPlan.travelers = newPlan.travelers || groupSize || null;
-        
-        // Set dates if provided
-        if (startDate) newPlan.fromdate = new Date(startDate);
-        if (endDate) newPlan.todate = new Date(endDate);
+        // Generate weather data for AI-created plans (non-blocking)
+        try {
+          console.log('Generating weather data for AI plan...');
+          const weatherData = await generateWeatherDataForPlan(nameoftheplace);
+          planData.weatherData = weatherData;
+          console.log('Weather data generated successfully for AI plan:', {
+            hasCurrentWeather: !!weatherData.current,
+            hasForecast: !!weatherData.forecast,
+            hasSeasonal: !!weatherData.seasonal
+          });
+        } catch (weatherError) {
+          console.warn('Weather generation failed:', weatherError.message);
+          // Continue without weather data if API fails
+        }
         
         // Update content generation state to show all content is generated
-        newPlan.contentGenerationState = {
+        planData.contentGenerationState = {
           imagination: true,
           abouttheplace: true,
           adventuresactivitiestodo: true,
@@ -104,35 +164,101 @@ const createPlan = async (req, res, next) => {
           besttimetovisit: true
         };
         
-        // Reduce user credits for AI generation
-        await User.findOneAndUpdate(
-          { userId },
-          { $inc: { freeCredits: -1 } }
-        );
+        console.log('AI generation completed successfully');
 
       } catch (aiError) {
         console.error('AI Generation Error:', aiError);
-        // Continue with basic plan creation even if AI fails
+        return res.status(500).json(
+          createResponse('error', `AI generation failed: ${aiError.message}. Please try creating a manual plan.`)
+        );
+      }
+    } else {
+      // For manual plans, still generate weather data if possible
+      try {
+        console.log('Generating weather data for manual plan...');
+        const weatherData = await generateWeatherDataForPlan(nameoftheplace);
+        planData.weatherData = weatherData;
+        console.log('Weather data generated successfully for manual plan:', {
+          hasCurrentWeather: !!weatherData.current,
+          hasForecast: !!weatherData.forecast,
+          hasSeasonal: !!weatherData.seasonal
+        });
+      } catch (weatherError) {
+        console.warn('Weather generation failed for manual plan:', weatherError.message);
+        // Continue without weather data if API fails
       }
     }
 
-    const savedPlan = await newPlan.save();
+    console.log('Creating plan in database...');
+    console.log('Plan data summary:', {
+      destination: planData.nameoftheplace,
+      hasWeatherData: !!planData.weatherData,
+      isAI: planData.isGeneratedUsingAI,
+      userId: planData.userId
+    });
+
+    // Create the plan
+    const savedPlan = await Plan.create(planData);
+    
+    console.log('Plan created with ID:', savedPlan.id);
+    console.log('Saved plan weather data:', !!savedPlan.weatherData);
+
+    // Deduct credits only after successful plan creation
+    if (isGeneratedUsingAI) {
+      try {
+        if (user.freeCredits > 0) {
+          await user.update({ 
+            freeCredits: user.freeCredits - 1 
+          });
+        } else {
+          await user.update({ 
+            credits: user.credits - 1 
+          });
+        }
+        console.log('Credits deducted successfully');
+      } catch (creditError) {
+        console.error('Error deducting credits:', creditError);
+        // Don't fail the request if credit deduction fails
+      }
+    }
 
     // Create default plan settings
-    await PlanSettings.create({
-      userId,
-      planId: savedPlan._id,
-      currencyCode: 'USD',
-      isPublished: false
-    });
+    try {
+      await PlanSettings.create({
+        userId,
+        planId: savedPlan.id,
+        currencyCode: 'USD',
+        isPublished: false
+      });
+      console.log('Plan settings created successfully');
+    } catch (settingsError) {
+      console.error('Error creating plan settings:', settingsError);
+      // Don't fail the request if settings creation fails
+    }
 
     res.status(201).json(
       createResponse('success', 'Plan created successfully', { plan: savedPlan })
     );
+
   } catch (error) {
     console.error('Error creating plan:', error);
+    console.error('Stack trace:', error.stack);
+    
+    // More specific error messages
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json(
+        createResponse('error', `Validation error: ${error.errors.map(e => e.message).join(', ')}`)
+      );
+    }
+    
+    if (error.name === 'SequelizeConnectionError') {
+      return res.status(500).json(
+        createResponse('error', 'Database connection error. Please try again later.')
+      );
+    }
+    
     res.status(500).json(
-      createResponse('error', 'Error creating plan', { error: error.message })
+      createResponse('error', 'An unexpected error occurred while creating the plan. Please try again.')
     );
   }
 };
@@ -145,18 +271,29 @@ const getUserPlans = async (req, res, next) => {
     const { skip, limit: limitNum } = paginate(page, limit);
 
     // Get user's own plans
-    const ownPlans = await Plan.find({ userId })
-      .skip(skip)
-      .limit(limitNum)
-      .sort({ createdAt: -1 })
-      .populate('userId', 'firstName lastName');
+    const ownPlans = await Plan.findAll({
+      where: { userId },
+      offset: skip,
+      limit: limitNum,
+      order: [['createdAt', 'DESC']]
+    });
 
     // Get shared plans
-    const accessRecords = await Access.find({ userId }).populate('planId');
-    const sharedPlans = accessRecords.map(record => record.planId).filter(Boolean);
+    const accessRecords = await Access.findAll({ 
+      where: { userId },
+      include: [{ model: Plan, as: 'plan' }]
+    });
+    const sharedPlans = accessRecords.map(record => record.plan).filter(Boolean);
 
-    const totalOwn = await Plan.countDocuments({ userId });
+    const totalOwn = await Plan.count({ where: { userId } });
     const totalShared = sharedPlans.length;
+
+    // Set cache control headers to prevent caching of user plans
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
 
     res.json(
       createResponse('success', 'Plans retrieved successfully', {
@@ -183,7 +320,7 @@ const getPlan = async (req, res, next) => {
     const { planId } = req.params;
     const userId = req.userId;
 
-    const plan = await Plan.findById(planId);
+    const plan = await Plan.findByPk(planId);
     if (!plan) {
       return res.status(404).json(
         createResponse('error', 'Plan not found')
@@ -198,7 +335,7 @@ const getPlan = async (req, res, next) => {
       hasAccess = true;
       userRole = 'admin';
     } else {
-      const access = await Access.findOne({ planId, userId });
+      const access = await Access.findOne({ where: { planId, userId } });
       if (access) {
         hasAccess = true;
         userRole = access.role;
@@ -215,7 +352,14 @@ const getPlan = async (req, res, next) => {
     }
 
     // Get plan settings
-    const planSettings = await PlanSettings.findOne({ planId });
+    const planSettings = await PlanSettings.findOne({ where: { planId } });
+
+    // Set cache control headers to prevent caching of plan data
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
 
     res.json(
       createResponse('success', 'Plan retrieved successfully', {
@@ -237,7 +381,7 @@ const updatePlan = async (req, res, next) => {
     const userId = req.userId;
     const updates = req.body;
 
-    const plan = await Plan.findById(planId);
+    const plan = await Plan.findByPk(planId);
     if (!plan) {
       return res.status(404).json(
         createResponse('error', 'Plan not found')
@@ -252,19 +396,16 @@ const updatePlan = async (req, res, next) => {
     }
 
     // Remove fields that shouldn't be updated directly
-    delete updates._id;
+    delete updates.id;
     delete updates.userId;
     delete updates.createdAt;
     delete updates.updatedAt;
 
-    const updatedPlan = await Plan.findByIdAndUpdate(
-      planId,
-      updates,
-      { new: true, runValidators: true }
-    );
+    await plan.update(updates);
+    await plan.reload();
 
     res.json(
-      createResponse('success', 'Plan updated successfully', { plan: updatedPlan })
+      createResponse('success', 'Plan updated successfully', { plan })
     );
   } catch (error) {
     next(error);
@@ -277,7 +418,7 @@ const deletePlan = async (req, res, next) => {
     const { planId } = req.params;
     const userId = req.userId;
 
-    const plan = await Plan.findById(planId);
+    const plan = await Plan.findByPk(planId);
     if (!plan) {
       return res.status(404).json(
         createResponse('error', 'Plan not found')
@@ -293,9 +434,9 @@ const deletePlan = async (req, res, next) => {
 
     // Delete associated records
     await Promise.all([
-      Plan.findByIdAndDelete(planId),
-      Access.deleteMany({ planId }),
-      PlanSettings.deleteOne({ planId })
+      plan.destroy(),
+      Access.destroy({ where: { planId } }),
+      PlanSettings.destroy({ where: { planId } })
     ]);
 
     res.json(
@@ -312,34 +453,39 @@ const getPublicPlans = async (req, res, next) => {
     const { page = 1, limit = 10, search, companion } = req.query;
     const { skip, limit: limitNum } = paginate(page, limit);
 
-    let query = { isPublic: true };
+    let whereClause = { isPublic: true };
 
     // Add search filter
     if (search) {
-      query.$or = [
-        { nameoftheplace: { $regex: search, $options: 'i' } },
-        { userPrompt: { $regex: search, $options: 'i' } }
+      whereClause[Op.or] = [
+        { nameoftheplace: { [Op.iLike]: `%${search}%` } },
+        { userPrompt: { [Op.iLike]: `%${search}%` } }
       ];
     }
 
     // Get plan IDs that match companion filter
-    let planIds = [];
     if (companion) {
-      const settings = await PlanSettings.find({
-        companion: { $regex: companion, $options: 'i' },
-        isPublished: true
-      }).select('planId');
-      planIds = settings.map(s => s.planId);
-      query._id = { $in: planIds };
+      const settings = await PlanSettings.findAll({
+        where: {
+          companion: { [Op.iLike]: `%${companion}%` },
+          isPublished: true
+        },
+        attributes: ['planId']
+      });
+      const planIds = settings.map(s => s.planId);
+      if (planIds.length > 0) {
+        whereClause.id = { [Op.in]: planIds };
+      }
     }
 
-    const plans = await Plan.find(query)
-      .skip(skip)
-      .limit(limitNum)
-      .sort({ createdAt: -1 })
-      .populate('userId', 'firstName lastName');
+    const plans = await Plan.findAll({
+      where: whereClause,
+      offset: skip,
+      limit: limitNum,
+      order: [['createdAt', 'DESC']]
+    });
 
-    const total = await Plan.countDocuments(query);
+    const total = await Plan.count({ where: whereClause });
 
     res.json(
       createResponse('success', 'Public plans retrieved successfully', {
@@ -364,7 +510,7 @@ const togglePlanVisibility = async (req, res, next) => {
     const { planId } = req.params;
     const userId = req.userId;
 
-    const plan = await Plan.findById(planId);
+    const plan = await Plan.findByPk(planId);
     if (!plan) {
       return res.status(404).json(
         createResponse('error', 'Plan not found')
@@ -383,9 +529,9 @@ const togglePlanVisibility = async (req, res, next) => {
     await plan.save();
 
     // Update plan settings
-    await PlanSettings.findOneAndUpdate(
-      { planId },
-      { isPublished: plan.isPublic }
+    await PlanSettings.update(
+      { isPublished: plan.isPublic },
+      { where: { planId } }
     );
 
     res.json(
@@ -403,27 +549,33 @@ const getAllPlans = async (req, res, next) => {
     const { page = 1, limit = 50, search, status } = req.query;
     const { skip, limit: limitNum } = paginate(page, limit);
 
-    let query = {};
+    let whereClause = {};
     if (search) {
-      query = {
-        $or: [
-          { nameoftheplace: { $regex: search, $options: 'i' } },
-          { abouttheplace: { $regex: search, $options: 'i' } }
+      whereClause = {
+        [Op.or]: [
+          { nameoftheplace: { [Op.iLike]: `%${search}%` } },
+          { abouttheplace: { [Op.iLike]: `%${search}%` } }
         ]
       };
     }
 
     if (status && status !== 'all') {
-      query.status = status;
+      whereClause.status = status;
     }
 
-    const plans = await Plan.find(query)
-      .populate('userId', 'firstName lastName email')
-      .skip(skip)
-      .limit(limitNum)
-      .sort({ createdAt: -1 });
+    const plans = await Plan.findAll({
+      where: whereClause,
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['firstName', 'lastName', 'email']
+      }],
+      offset: skip,
+      limit: limitNum,
+      order: [['createdAt', 'DESC']]
+    });
 
-    const total = await Plan.countDocuments(query);
+    const total = await Plan.count({ where: whereClause });
 
     res.json(
       createResponse('success', 'Plans retrieved successfully', {
@@ -454,7 +606,7 @@ const updatePlanStatus = async (req, res, next) => {
       );
     }
 
-    const plan = await Plan.findById(planId);
+    const plan = await Plan.findByPk(planId);
     if (!plan) {
       return res.status(404).json(
         createResponse('error', 'Plan not found')
@@ -481,7 +633,7 @@ const deletePlanAdmin = async (req, res, next) => {
   try {
     const { planId } = req.params;
 
-    const plan = await Plan.findById(planId);
+    const plan = await Plan.findByPk(planId);
     if (!plan) {
       return res.status(404).json(
         createResponse('error', 'Plan not found')
@@ -489,9 +641,9 @@ const deletePlanAdmin = async (req, res, next) => {
     }
 
     // Delete associated data
-    await Access.deleteMany({ planId });
-    await PlanSettings.deleteMany({ planId });
-    await Plan.findByIdAndDelete(planId);
+    await Access.destroy({ where: { planId } });
+    await PlanSettings.destroy({ where: { planId } });
+    await plan.destroy();
 
     res.json(
       createResponse('success', 'Plan deleted successfully')

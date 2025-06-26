@@ -1,32 +1,47 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const inviteSchema = new mongoose.Schema({  planId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Plan'
+const Invite = sequelize.define('Invite', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  planId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'plans',
+      key: 'id'
+    }
   },
   email: {
-    type: String,
-    lowercase: true
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      isEmail: true
+    }
   },
   token: {
-    type: String,
-    unique: true
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false
   },
   invitedBy: {
-    type: String
+    type: DataTypes.STRING,
+    allowNull: false
   },
   status: {
-    type: String,
-    enum: ['pending', 'accepted', 'rejected', 'expired'],
-    default: 'pending'
+    type: DataTypes.ENUM('pending', 'accepted', 'rejected', 'expired'),
+    defaultValue: 'pending'
   },
   expiresAt: {
-    type: Date,
-    default: Date.now,
-    expires: 604800 // 7 days in seconds
+    type: DataTypes.DATE,
+    defaultValue: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
   }
 }, {
+  tableName: 'invites',
   timestamps: true
 });
 
-module.exports = mongoose.model('Invite', inviteSchema);
+module.exports = Invite;

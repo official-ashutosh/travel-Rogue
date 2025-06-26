@@ -1,70 +1,95 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const userSchema = new mongoose.Schema({
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
   userId: {
-    type: String,
-    unique: true
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false
   },
   email: {
-    type: String,
+    type: DataTypes.STRING,
     unique: true,
-    lowercase: true
+    allowNull: false,
+    validate: {
+      isEmail: true
+    }
   },
   firstName: {
-    type: String,
-    trim: true
+    type: DataTypes.STRING,
+    allowNull: true
   },
   lastName: {
-    type: String,
-    trim: true
-  },
-  credits: {
-    type: Number,
-    default: 0
-  },
-  freeCredits: {
-    type: Number,
-    default: 2
+    type: DataTypes.STRING,
+    allowNull: true
   },
   password: {
-    type: String
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  credits: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    allowNull: false
+  },
+  freeCredits: {
+    type: DataTypes.INTEGER,
+    defaultValue: 2,
+    allowNull: false
   },
   isEmailVerified: {
-    type: Boolean,
-    default: false
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
-  emailVerificationToken: String,
-  passwordResetToken: String,
-  passwordResetExpires: Date,
-  lastLogin: Date,
+  emailVerificationToken: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  passwordResetToken: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  passwordResetExpires: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  lastLogin: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
   isActive: {
-    type: Boolean,
-    default: true
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   },
   role: {
-    type: String,
-    enum: ['user', 'admin'],
-    default: 'user'
+    type: DataTypes.ENUM('user', 'admin'),
+    defaultValue: 'user'
   },
-  likedPlans: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Plan'
-  }]
+  likedPlans: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  }
 }, {
+  tableName: 'users',
   timestamps: true,
-  toJSON: {
-    transform: function(doc, ret) {
-      delete ret.password;
-      delete ret.passwordResetToken;
-      delete ret.emailVerificationToken;
-      return ret;
+  defaultScope: {
+    attributes: { exclude: ['password', 'passwordResetToken', 'emailVerificationToken'] }
+  },
+  scopes: {
+    withPassword: {
+      attributes: { include: ['password'] }
     }
   }
 });
 
 // Virtual for full name
-userSchema.virtual('fullName').get(function() {
+User.prototype.getFullName = function() {
   return `${this.firstName || ''} ${this.lastName || ''}`.trim();
-});
+};
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = User;

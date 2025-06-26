@@ -1,192 +1,148 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const coordinatesSchema = new mongoose.Schema({
-  lat: {
-    type: Number
+const Plan = sequelize.define('Plan', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
   },
-  lng: {
-    type: Number
-  }
-}, { _id: false });
-
-const topPlaceSchema = new mongoose.Schema({
-  name: {
-    type: String
-  },
-  coordinates: coordinatesSchema
-}, { _id: false });
-
-const itineraryItemSchema = new mongoose.Schema({
-  itineraryItem: {
-    type: String
-  },
-  briefDescription: {
-    type: String
-  }
-}, { _id: false });
-
-const activitiesSchema = new mongoose.Schema({
-  morning: [itineraryItemSchema],
-  afternoon: [itineraryItemSchema],
-  evening: [itineraryItemSchema]
-}, { _id: false });
-
-const itineraryDaySchema = new mongoose.Schema({
-  title: {
-    type: String
-  },
-  activities: activitiesSchema
-}, { _id: false });
-
-const contentGenerationStateSchema = new mongoose.Schema({
-  imagination: {
-    type: Boolean,
-    default: false
-  },
-  abouttheplace: {
-    type: Boolean,
-    default: false
-  },
-  adventuresactivitiestodo: {
-    type: Boolean,
-    default: false
-  },
-  topplacestovisit: {
-    type: Boolean,
-    default: false
-  },
-  itinerary: {
-    type: Boolean,
-    default: false
-  },
-  localcuisinerecommendations: {
-    type: Boolean,
-    default: false
-  },
-  packingchecklist: {
-    type: Boolean,
-    default: false
-  },
-  besttimetovisit: {
-    type: Boolean,
-    default: false
-  }
-}, { _id: false });
-
-const planSchema = new mongoose.Schema({
-  isGeneratedUsingAI: {
-    type: Boolean,
-    default: false
-  },
-  storageId: {
-    type: String,
-    default: null
-  },  nameoftheplace: {
-    type: String,
-    trim: true
+  nameoftheplace: {
+    type: DataTypes.STRING,
+    allowNull: false
   },
   userPrompt: {
-    type: String
+    type: DataTypes.TEXT,
+    allowNull: true
   },
+  userId: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'userId'
+    }
+  },
+  isGeneratedUsingAI: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  // Content fields
   abouttheplace: {
-    type: String,
-    default: ''
+    type: DataTypes.TEXT,
+    allowNull: true
   },
-  adventuresactivitiestodo: [{
-    type: String
-  }],
-  topplacestovisit: [topPlaceSchema],
-  packingchecklist: [{
-    type: String
-  }],
-  localcuisinerecommendations: [{
-    type: String
-  }],  userId: {
-    type: String
+  adventuresactivitiestodo: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
+  topplacestovisit: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
+  itinerary: {
+    type: DataTypes.JSONB,
+    defaultValue: {}
+  },
+  localcuisinerecommendations: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
+  packingchecklist: {
+    type: DataTypes.JSONB,
+    defaultValue: []
   },
   besttimetovisit: {
-    type: String,
-    default: ''
+    type: DataTypes.TEXT,
+    allowNull: true
   },
-  itinerary: [itineraryDaySchema],
+  // Content generation tracking
   contentGenerationState: {
-    type: contentGenerationStateSchema,
-    default: () => ({})
+    type: DataTypes.JSONB,
+    defaultValue: {
+      imagination: false,
+      abouttheplace: false,
+      adventuresactivitiestodo: false,
+      topplacestovisit: false,
+      itinerary: false,
+      localcuisinerecommendations: false,
+      packingchecklist: false,
+      besttimetovisit: false
+    }
   },
-  imageUrl: {
-    type: String
-  },
+  // Plan metadata
   isPublic: {
-    type: Boolean,
-    default: false
-  },
-  likes: {
-    type: Number,
-    default: 0
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   views: {
-    type: Number,
-    default: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  likes: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   },
   rating: {
-    type: Number,
-    default: null,
-    min: 1,
-    max: 5
+    type: DataTypes.FLOAT,
+    allowNull: true,
+    validate: {
+      min: 1,
+      max: 5
+    }
   },
-  budget: {
-    type: Number,
-    default: null
+  tags: {
+    type: DataTypes.JSONB,
+    defaultValue: []
   },
-  estimatedBudget: {
-    type: Number,
-    default: null
+  // Date fields (unified)
+  startDate: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
   },
-  totalBudget: {
-    type: Number,
-    default: null
+  endDate: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
   },
-  tags: [{
-    type: String
-  }],
+  // Traveler info
   travelers: {
-    type: Number,
-    default: null
+    type: DataTypes.INTEGER,
+    allowNull: true
   },
   groupSize: {
-    type: Number,
-    default: null
+    type: DataTypes.INTEGER,
+    allowNull: true
   },
-  numberOfTravelers: {
-    type: Number,
-    default: null
+  // Budget info
+  budget: {
+    type: DataTypes.JSONB,
+    allowNull: true
   },
-  fromdate: {
-    type: Date,
-    default: null
+  estimatedBudget: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true
   },
-  todate: {
-    type: Date,
-    default: null
+  totalBudget: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true
   },
-  fromDate: {
-    type: Date,
-    default: null
+  // Weather data
+  weatherData: {
+    type: DataTypes.JSONB,
+    allowNull: true
   },
-  toDate: {
-    type: Date,
-    default: null
+  // Other fields
+  imageUrl: {
+    type: DataTypes.STRING,
+    allowNull: true
   },
-  startdate: {
-    type: Date,
-    default: null
-  },
-  enddate: {
-    type: Date,
-    default: null
+  status: {
+    type: DataTypes.ENUM('draft', 'published', 'archived'),
+    defaultValue: 'draft'
   }
 }, {
+  tableName: 'plans',
   timestamps: true
 });
 
-module.exports = mongoose.model('Plan', planSchema);
+module.exports = Plan;

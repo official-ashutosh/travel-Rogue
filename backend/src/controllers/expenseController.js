@@ -1,6 +1,5 @@
-const Expense = require('../models/Expense');
-const Plan = require('../models/Plan');
-const Access = require('../models/Access');
+const { Op } = require('sequelize');
+const { Expense, Plan, Access } = require('../models');
 const { createResponse, paginate, calculateExpenseTotals } = require('../utils/helpers');
 
 // Create expense
@@ -10,7 +9,7 @@ const createExpense = async (req, res, next) => {
     const userId = req.userId;
 
     // Check if plan exists
-    const plan = await Plan.findById(planId);
+    const plan = await Plan.findByPk(planId);
     if (!plan) {
       return res.status(404).json(
         createResponse('error', 'Plan not found')
@@ -22,7 +21,9 @@ const createExpense = async (req, res, next) => {
     if (plan.userId === userId) {
       hasAccess = true;
     } else {
-      const access = await Access.findOne({ planId, userId });
+      const access = await Access.findOne({ 
+        where: { planId, userId } 
+      });
       if (access && ['editor', 'admin'].includes(access.role)) {
         hasAccess = true;
       }
@@ -62,7 +63,7 @@ const getPlanExpenses = async (req, res, next) => {
     const { skip, limit: limitNum } = paginate(page, limit);
 
     // Check if plan exists and user has access
-    const plan = await Plan.findById(planId);
+    const plan = await Plan.findByPk(planId);
     if (!plan) {
       return res.status(404).json(
         createResponse('error', 'Plan not found')
@@ -73,7 +74,9 @@ const getPlanExpenses = async (req, res, next) => {
     if (plan.userId === userId) {
       hasAccess = true;
     } else {
-      const access = await Access.findOne({ planId, userId });
+      const access = await Access.findOne({ 
+        where: { planId, userId } 
+      });
       if (access) {
         hasAccess = true;
       }
@@ -86,29 +89,31 @@ const getPlanExpenses = async (req, res, next) => {
     }
 
     // Build query
-    let query = { planId };
+    let whereClause = { planId };
     
     if (category) {
-      query.category = category;
+      whereClause.category = category;
     }
 
     if (startDate || endDate) {
-      query.date = {};
-      if (startDate) query.date.$gte = startDate;
-      if (endDate) query.date.$lte = endDate;
+      whereClause.date = {};
+      if (startDate) whereClause.date[Op.gte] = startDate;
+      if (endDate) whereClause.date[Op.lte] = endDate;
     }
 
     // Get expenses
-    const expenses = await Expense.find(query)
-      .skip(skip)
-      .limit(limitNum)
-      .sort({ date: -1, createdAt: -1 })
-      .populate('userId', 'firstName lastName email');
+    const expenses = await Expense.findAll({
+      where: whereClause,
+      offset: skip,
+      limit: limitNum,
+      order: [['date', 'DESC'], ['createdAt', 'DESC']],
+      include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName', 'email'] }]
+    });
 
-    const total = await Expense.countDocuments(query);
+    const total = await Expense.count({ where: whereClause });
 
     // Calculate totals
-    const allExpenses = await Expense.find({ planId });
+    const allExpenses = await Expense.findAll({ where: { planId } });
     const totals = calculateExpenseTotals(allExpenses);
 
     res.json(
@@ -137,28 +142,30 @@ const getUserExpenses = async (req, res, next) => {
     const { skip, limit: limitNum } = paginate(page, limit);
 
     // Build query
-    let query = { userId };
+    let whereClause = { userId };
     
     if (category) {
-      query.category = category;
+      whereClause.category = category;
     }
 
     if (startDate || endDate) {
-      query.date = {};
-      if (startDate) query.date.$gte = startDate;
-      if (endDate) query.date.$lte = endDate;
+      whereClause.date = {};
+      if (startDate) whereClause.date[Op.gte] = startDate;
+      if (endDate) whereClause.date[Op.lte] = endDate;
     }
 
-    const expenses = await Expense.find(query)
-      .skip(skip)
-      .limit(limitNum)
-      .sort({ date: -1, createdAt: -1 })
-      .populate('planId', 'nameoftheplace');
+    const expenses = await Expense.findAll({
+      where: whereClause,
+      offset: skip,
+      limit: limitNum,
+      order: [['date', 'DESC'], ['createdAt', 'DESC']],
+      include: [{ model: Plan, as: 'plan', attributes: ['nameoftheplace'] }]
+    });
 
-    const total = await Expense.countDocuments(query);
+    const total = await Expense.count({ where: whereClause });
 
     // Calculate totals for user
-    const allUserExpenses = await Expense.find({ userId });
+    const allUserExpenses = await Expense.findAll({ where: { userId } });
     const totals = calculateExpenseTotals(allUserExpenses);
 
     res.json(
@@ -186,7 +193,7 @@ const updateExpense = async (req, res, next) => {
     const { amount, purpose, category, date, currency, notes } = req.body;
     const userId = req.userId;
 
-    const expense = await Expense.findById(expenseId);
+    const expense = await Expense.findByPk(expenseId);
     if (!expense) {
       return res.status(404).json(
         createResponse('error', 'Expense not found')
@@ -198,14 +205,16 @@ const updateExpense = async (req, res, next) => {
     if (expense.userId === userId) {
       canEdit = true;
     } else {
-      const plan = await Plan.findById(expense.planId);
+      const plan = await Plan.findByPk(expense.planId);
       if (plan && plan.userId === userId) {
         canEdit = true;
       } else {
         const access = await Access.findOne({ 
-          planId: expense.planId, 
-          userId,
-          role: { $in: ['admin', 'editor'] }
+          where: { 
+            planId: expense.planId, 
+            userId,
+            role: { [Op.in]: ['admin', 'editor'] }
+          }
         });
         if (access) {
           canEdit = true;
@@ -219,11 +228,19 @@ const updateExpense = async (req, res, next) => {
       );
     }
 
-    const updatedExpense = await Expense.findByIdAndUpdate(
-      expenseId,
-      { amount, purpose, category, date, currency, notes },
-      { new: true, runValidators: true }
-    ).populate('userId', 'firstName lastName email');
+    const updatedExpense = await expense.update({
+      amount,
+      purpose,
+      category,
+      date,
+      currency,
+      notes
+    });
+
+    // Reload with associations
+    await updatedExpense.reload({
+      include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName', 'email'] }]
+    });
 
     res.json(
       createResponse('success', 'Expense updated successfully', { expense: updatedExpense })
@@ -239,7 +256,7 @@ const deleteExpense = async (req, res, next) => {
     const { expenseId } = req.params;
     const userId = req.userId;
 
-    const expense = await Expense.findById(expenseId);
+    const expense = await Expense.findByPk(expenseId);
     if (!expense) {
       return res.status(404).json(
         createResponse('error', 'Expense not found')
@@ -251,14 +268,16 @@ const deleteExpense = async (req, res, next) => {
     if (expense.userId === userId) {
       canDelete = true;
     } else {
-      const plan = await Plan.findById(expense.planId);
+      const plan = await Plan.findByPk(expense.planId);
       if (plan && plan.userId === userId) {
         canDelete = true;
       } else {
         const access = await Access.findOne({ 
-          planId: expense.planId, 
-          userId,
-          role: { $in: ['admin', 'editor'] }
+          where: { 
+            planId: expense.planId, 
+            userId,
+            role: { [Op.in]: ['admin', 'editor'] }
+          }
         });
         if (access) {
           canDelete = true;
@@ -272,7 +291,7 @@ const deleteExpense = async (req, res, next) => {
       );
     }
 
-    await Expense.findByIdAndDelete(expenseId);
+    await expense.destroy();
 
     res.json(
       createResponse('success', 'Expense deleted successfully')
@@ -289,7 +308,7 @@ const getExpenseAnalytics = async (req, res, next) => {
     const userId = req.userId;
 
     // Check if plan exists and user has access
-    const plan = await Plan.findById(planId);
+    const plan = await Plan.findByPk(planId);
     if (!plan) {
       return res.status(404).json(
         createResponse('error', 'Plan not found')
@@ -300,7 +319,9 @@ const getExpenseAnalytics = async (req, res, next) => {
     if (plan.userId === userId) {
       hasAccess = true;
     } else {
-      const access = await Access.findOne({ planId, userId });
+      const access = await Access.findOne({ 
+        where: { planId, userId } 
+      });
       if (access) {
         hasAccess = true;
       }
@@ -313,7 +334,7 @@ const getExpenseAnalytics = async (req, res, next) => {
     }
 
     // Get all expenses for the plan
-    const expenses = await Expense.find({ planId });
+    const expenses = await Expense.findAll({ where: { planId } });
 
     // Calculate analytics
     const totals = calculateExpenseTotals(expenses);

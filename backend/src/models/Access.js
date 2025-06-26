@@ -1,26 +1,46 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const accessSchema = new mongoose.Schema({  planId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Plan'
+const Access = sequelize.define('Access', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  planId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'plans',
+      key: 'id'
+    }
   },
   userId: {
-    type: String
+    type: DataTypes.STRING,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'userId'
+    }
   },
   email: {
-    type: String,
-    lowercase: true
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      isEmail: true
+    }
   },
   role: {
-    type: String,
-    enum: ['viewer', 'editor', 'admin'],
-    default: 'viewer'
+    type: DataTypes.ENUM('viewer', 'editor', 'admin'),
+    defaultValue: 'viewer'
   },
   grantedBy: {
-    type: String
+    type: DataTypes.STRING,
+    allowNull: false
   }
 }, {
+  tableName: 'accesses',
   timestamps: true
 });
 
-module.exports = mongoose.model('Access', accessSchema);
+module.exports = Access;

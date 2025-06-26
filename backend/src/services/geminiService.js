@@ -7,22 +7,45 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // Comprehensive Gemini AI plan generation function
 const generateCompletePlanWithGemini = async (userInput) => {
   try {
+    console.log('Starting Gemini AI generation...');
+    
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('Gemini API key is not configured');
+    }
+
     const model = genAI.getGenerativeModel({ model: 'models/gemini-1.5-flash-latest' });
 
     // Create comprehensive prompt with user data and expected format
     const prompt = createDetailedPrompt(userInput);
+    
+    console.log('Sending request to Gemini AI...');
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
 
+    console.log('Received response from Gemini AI, parsing...');
+
     // Parse the JSON response from Gemini
     const parsedData = parseGeminiResponse(text);
+    
+    console.log('Gemini AI generation completed successfully');
+    
     return parsedData;
 
   } catch (error) {
     console.error('Gemini AI API Error:', error);
-    throw new Error(`Failed to generate AI content: ${error.message}`);
+    
+    // Provide more specific error messages
+    if (error.message.includes('API key')) {
+      throw new Error('AI service authentication failed. Please contact support.');
+    } else if (error.message.includes('quota') || error.message.includes('limit')) {
+      throw new Error('AI service quota exceeded. Please try again later.');
+    } else if (error.message.includes('network') || error.message.includes('timeout')) {
+      throw new Error('Network error while connecting to AI service. Please try again.');
+    } else {
+      throw new Error(`AI generation failed: ${error.message}`);
+    }
   }
 };
 

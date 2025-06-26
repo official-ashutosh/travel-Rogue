@@ -1,5 +1,5 @@
-const Plan = require('../models/Plan');
-const User = require('../models/User');
+const { Op } = require('sequelize');
+const { Plan, User } = require('../models');
 
 // Get all public community plans
 const getCommunityPlans = async (req, res) => {
@@ -8,29 +8,30 @@ const getCommunityPlans = async (req, res) => {
     const skip = (page - 1) * limit;
     
     // Build query
+    const { Op } = require('sequelize');
     let query = { isPublic: true };
     
     if (search) {
-      query.$or = [
-        { nameoftheplace: { $regex: search, $options: 'i' } },
-        { abouttheplace: { $regex: search, $options: 'i' } }
+      query[Op.or] = [
+        { nameoftheplace: { [Op.iLike]: `%${search}%` } },
+        { abouttheplace: { [Op.iLike]: `%${search}%` } }
       ];
     }
     
     if (destination) {
-      query.nameoftheplace = { $regex: destination, $options: 'i' };
+      query.nameoftheplace = { [Op.iLike]: `%${destination}%` };
     }
     
     // Get plans with pagination
-    const plans = await Plan.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit))
-      .populate('userId', 'firstName lastName')
-      .lean();
+    const plans = await Plan.findAll({
+      where: query,
+      order: [['createdAt', 'DESC']],
+      offset: skip,
+      limit: parseInt(limit)
+    });
     
     // Get total count for pagination
-    const totalPlans = await Plan.countDocuments(query);
+    const totalPlans = await Plan.count({ where: query });
     
     res.json({
       status: 'success',
@@ -59,9 +60,10 @@ const getCommunityPlan = async (req, res) => {
   try {
     const { planId } = req.params;
     
-    const plan = await Plan.findOne({ _id: planId, isPublic: true })
-      .populate('userId', 'firstName lastName email')
-      .lean();
+    const plan = await Plan.findOne({ 
+      where: { id: planId, isPublic: true },
+      include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName', 'email'] }]
+    });
     
     if (!plan) {
       return res.status(404).json({
@@ -71,7 +73,7 @@ const getCommunityPlan = async (req, res) => {
     }
     
     // Increment view count
-    await Plan.findByIdAndUpdate(planId, { $inc: { views: 1 } });
+    await Plan.increment('views', { where: { id: planId } });
     
     res.json({
       status: 'success',
@@ -93,7 +95,9 @@ const togglePlanLike = async (req, res) => {
     const userId = req.user.userId;
     
     // Check if plan exists and is public
-    const plan = await Plan.findOne({ _id: planId, isPublic: true });
+    const plan = await Plan.findOne({ 
+      where: { id: planId, isPublic: true } 
+    });
     
     if (!plan) {
       return res.status(404).json({
@@ -103,7 +107,7 @@ const togglePlanLike = async (req, res) => {
     }
     
     // Check if user already liked this plan
-    const user = await User.findOne({ userId });
+    const user = await User.findOne({ where: { userId } });
     if (!user) {
       return res.status(404).json({
         status: 'error',
@@ -115,11 +119,9 @@ const togglePlanLike = async (req, res) => {
     
     if (hasLiked) {
       // Unlike the plan
-      await User.findOneAndUpdate(
-        { userId },
-        { $pull: { likedPlans: planId } }
-      );
-      await Plan.findByIdAndUpdate(planId, { $inc: { likes: -1 } });
+      const updatedLikedPlans = user.likedPlans.filter(id => id !== planId);
+      await user.update({ likedPlans: updatedLikedPlans });
+      await Plan.decrement('likes', { where: { id: planId } });
       
       res.json({
         status: 'success',
@@ -128,11 +130,9 @@ const togglePlanLike = async (req, res) => {
       });
     } else {
       // Like the plan
-      await User.findOneAndUpdate(
-        { userId },
-        { $addToSet: { likedPlans: planId } }
-      );
-      await Plan.findByIdAndUpdate(planId, { $inc: { likes: 1 } });
+      const updatedLikedPlans = [...(user.likedPlans || []), planId];
+      await user.update({ likedPlans: updatedLikedPlans });
+      await Plan.increment('likes', { where: { id: planId } });
       
       res.json({
         status: 'success',
@@ -154,15 +154,16 @@ const getPopularPlans = async (req, res) => {
   try {
     const { limit = 6 } = req.query;
     
-    const plans = await Plan.find({ isPublic: true })
-      .sort({ 
-        likes: -1, 
-        views: -1, 
-        createdAt: -1 
-      })
-      .limit(parseInt(limit))
-      .populate('userId', 'firstName lastName')
-      .lean();
+    const plans = await Plan.findAll({
+      where: { isPublic: true },
+      order: [
+        ['likes', 'DESC'], 
+        ['views', 'DESC'], 
+        ['createdAt', 'DESC']
+      ],
+      limit: parseInt(limit),
+      include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName'] }]
+    });
     
     res.json({
       status: 'success',

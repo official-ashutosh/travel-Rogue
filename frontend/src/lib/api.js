@@ -6,6 +6,9 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
   },
 });
 
@@ -77,8 +80,8 @@ export const userAPI = {
 export const plansAPI = {
   getPublicPlans: () => api.get('/plans/public'),
   createPlan: (planData) => api.post('/plans', planData),
-  getUserPlans: () => api.get('/plans/my-plans'),
-  getPlan: (planId) => api.get(`/plans/${planId}`),
+  getUserPlans: () => api.get(`/plans/my-plans?_t=${Date.now()}`),
+  getPlan: (planId) => api.get(`/plans/${planId}?_t=${Date.now()}`),
   updatePlan: (planId, planData) => api.put(`/plans/${planId}`, planData),
   deletePlan: (planId) => api.delete(`/plans/${planId}`),
   togglePlanVisibility: (planId) => api.post(`/plans/${planId}/toggle-visibility`),

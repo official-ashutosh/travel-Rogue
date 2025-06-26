@@ -1,49 +1,75 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const paymentMethods = ['stripe', 'razorpay', 'paypal'];
-const paymentStatuses = ['pending', 'completed', 'failed', 'refunded'];
-
-const paymentSchema = new mongoose.Schema({  paymentId: {
-    type: String,
-    unique: true
+const Payment = sequelize.define('Payment', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  paymentId: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false
   },
   email: {
-    type: String
+    type: DataTypes.STRING,
+    allowNull: true,
+    validate: {
+      isEmail: true
+    }
   },
   phone: {
-    type: String,
-    trim: true
+    type: DataTypes.STRING,
+    allowNull: true
   },
   amount: {
-    type: Number
+    type: DataTypes.FLOAT,
+    allowNull: false
   },
   currency: {
-    type: String,
-    default: 'USD',
-    uppercase: true
+    type: DataTypes.STRING,
+    defaultValue: 'USD'
   },
   method: {
-    type: String,
-    required: true,
-    enum: paymentMethods
-  },  status: {
-    type: String,
-    enum: paymentStatuses,
-    default: 'pending'
-  },  userId: {
-    type: String
+    type: DataTypes.ENUM('stripe', 'razorpay', 'paypal'),
+    allowNull: false
+  },
+  status: {
+    type: DataTypes.ENUM('pending', 'completed', 'failed', 'refunded'),
+    defaultValue: 'pending'
+  },
+  userId: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'userId'
+    }
   },
   creditsAdded: {
-    type: Number
+    type: DataTypes.INTEGER,
+    allowNull: true
   },
-  stripeSessionId: String,
-  razorpayOrderId: String,
-  razorpayPaymentId: String,
+  stripeSessionId: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  razorpayOrderId: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  razorpayPaymentId: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   metadata: {
-    type: mongoose.Schema.Types.Mixed
+    type: DataTypes.JSONB,
+    allowNull: true
   }
 }, {
+  tableName: 'payments',
   timestamps: true
 });
 
-module.exports = mongoose.model('Payment', paymentSchema);
+module.exports = Payment;

@@ -1,7 +1,6 @@
-const User = require('../models/User');
-const Plan = require('../models/Plan');
-const Access = require('../models/Access');
+const { User, Plan, Access } = require('../models');
 const { createResponse, paginate } = require('../utils/helpers');
+const { Op } = require('sequelize');
 
 // Get user profile
 const getProfile = async (req, res, next) => {
@@ -22,17 +21,14 @@ const updateProfile = async (req, res, next) => {
     const { firstName, lastName } = req.body;
     const userId = req.userId;
 
-    const user = await User.findOneAndUpdate(
-      { userId },
-      { firstName, lastName },
-      { new: true, runValidators: true }
-    );
-
+    const user = await User.findOne({ where: { userId } });
     if (!user) {
       return res.status(404).json(
         createResponse('error', 'User not found')
       );
     }
+
+    await user.update({ firstName, lastName });
 
     res.json(
       createResponse('success', 'Profile updated successfully', { user })
@@ -47,7 +43,10 @@ const getCredits = async (req, res, next) => {
   try {
     const userId = req.userId;
 
-    const user = await User.findOne({ userId }, 'credits freeCredits');
+    const user = await User.findOne({ 
+      where: { userId },
+      attributes: ['credits', 'freeCredits']
+    });
     if (!user) {
       return res.status(404).json(
         createResponse('error', 'User not found')
@@ -118,17 +117,20 @@ const addCredits = async (req, res, next) => {
       );
     }
 
-    const user = await User.findOneAndUpdate(
-      { userId },
-      { $inc: { credits: credits } },
-      { new: true }
-    );
-
+    const user = await User.findOne({ 
+      where: { userId },
+      attributes: { include: ['credits'] }
+    });
     if (!user) {
       return res.status(404).json(
         createResponse('error', 'User not found')
       );
     }
+
+    await user.increment('credits', { by: credits });
+
+    // Reload user to get updated values
+    await user.reload();
 
     res.json(
       createResponse('success', `${credits} credits added successfully`, {
@@ -148,24 +150,26 @@ const getAllUsers = async (req, res, next) => {
     const { page = 1, limit = 10, search } = req.query;
     const { skip, limit: limitNum } = paginate(page, limit);
 
-    let query = {};
+    let whereClause = {};
     if (search) {
-      query = {
-        $or: [
-          { firstName: { $regex: search, $options: 'i' } },
-          { lastName: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } }
+      whereClause = {
+        [Op.or]: [
+          { firstName: { [Op.iLike]: `%${search}%` } },
+          { lastName: { [Op.iLike]: `%${search}%` } },
+          { email: { [Op.iLike]: `%${search}%` } }
         ]
       };
     }
 
-    const users = await User.find(query)
-      .select('-password -passwordResetToken')
-      .skip(skip)
-      .limit(limitNum)
-      .sort({ createdAt: -1 });
+    const users = await User.findAll({
+      where: whereClause,
+      attributes: { exclude: ['password', 'passwordResetToken'] },
+      offset: skip,
+      limit: limitNum,
+      order: [['createdAt', 'DESC']]
+    });
 
-    const total = await User.countDocuments(query);
+    const total = await User.count({ where: whereClause });
 
     res.json(
       createResponse('success', 'Users retrieved successfully', {
@@ -189,17 +193,14 @@ const deactivateAccount = async (req, res, next) => {
   try {
     const userId = req.userId;
 
-    const user = await User.findOneAndUpdate(
-      { userId },
-      { isActive: false },
-      { new: true }
-    );
-
+    const user = await User.findOne({ where: { userId } });
     if (!user) {
       return res.status(404).json(
         createResponse('error', 'User not found')
       );
     }
+
+    await user.update({ isActive: false });
 
     res.json(
       createResponse('success', 'Account deactivated successfully')
@@ -215,22 +216,19 @@ const deleteAccount = async (req, res, next) => {
     const userId = req.userId;
 
     // Instead of actual deletion, we'll deactivate and anonymize
-    const user = await User.findOneAndUpdate(
-      { userId },
-      {
-        isActive: false,
-        email: `deleted_${Date.now()}@deleted.com`,
-        firstName: 'Deleted',
-        lastName: 'User'
-      },
-      { new: true }
-    );
-
+    const user = await User.findOne({ where: { userId } });
     if (!user) {
       return res.status(404).json(
         createResponse('error', 'User not found')
       );
     }
+
+    await user.update({
+      isActive: false,
+      email: `deleted_${Date.now()}@deleted.com`,
+      firstName: 'Deleted',
+      lastName: 'User'
+    });
 
     res.json(
       createResponse('success', 'Account deleted successfully')
@@ -253,15 +251,16 @@ const updateUserStatus = async (req, res, next) => {
       );
     }
 
-    const user = await User.findById(userId).select('-password');
+    const user = await User.findByPk(userId, { 
+      attributes: { exclude: ['password'] } 
+    });
     if (!user) {
       return res.status(404).json(
         createResponse('error', 'User not found')
       );
     }
 
-    user.status = status;
-    await user.save();
+    await user.update({ status });
 
     res.json(
       createResponse('success', `User status updated to ${status}`, {
@@ -278,7 +277,7 @@ const deleteUser = async (req, res, next) => {
   try {
     const { userId } = req.params;
 
-    const user = await User.findById(userId);
+    const user = await User.findByPk(userId);
     if (!user) {
       return res.status(404).json(
         createResponse('error', 'User not found')
@@ -287,9 +286,9 @@ const deleteUser = async (req, res, next) => {
 
     // Delete user's data
     await Promise.all([
-      Plan.deleteMany({ userId }),
-      Access.deleteMany({ userId }),
-      User.findByIdAndDelete(userId)
+      Plan.destroy({ where: { userId: user.userId } }),
+      Access.destroy({ where: { userId: user.userId } }),
+      user.destroy()
     ]);
 
     res.json(

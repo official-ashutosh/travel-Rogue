@@ -9,6 +9,9 @@ require('dotenv').config();
 const { connectDB } = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 
+// Initialize models
+require('./models');
+
 // Route imports
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -26,7 +29,7 @@ const locationRoutes = require('./routes/locations');
 
 const app = express();
 
-// Connect to MongoDB
+// Connect to PostgreSQL
 connectDB();
 
 // Security middleware

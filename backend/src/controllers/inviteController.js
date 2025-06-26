@@ -1,8 +1,6 @@
+const { Op } = require('sequelize');
 const crypto = require('crypto');
-const Invite = require('../models/Invite');
-const Access = require('../models/Access');
-const Plan = require('../models/Plan');
-const User = require('../models/User');
+const { Invite, Access, Plan, User } = require('../models');
 const { createResponse, paginate } = require('../utils/helpers');
 const { sendPlanInviteEmail } = require('../services/emailService');
 
@@ -13,7 +11,7 @@ const createInvite = async (req, res, next) => {
     const userId = req.userId;
 
     // Check if plan exists
-    const plan = await Plan.findById(planId);
+    const plan = await Plan.findByPk(planId);
     if (!plan) {
       return res.status(404).json(
         createResponse('error', 'Plan not found')
@@ -28,7 +26,9 @@ const createInvite = async (req, res, next) => {
     }
 
     // Check if invite already exists for this email and plan
-    const existingInvite = await Invite.findOne({ planId, email, status: 'pending' });
+    const existingInvite = await Invite.findOne({ 
+      where: { planId, email, status: 'pending' } 
+    });
     if (existingInvite) {
       return res.status(400).json(
         createResponse('error', 'Invite already sent to this email for this plan')
@@ -36,7 +36,9 @@ const createInvite = async (req, res, next) => {
     }
 
     // Check if user already has access
-    const existingAccess = await Access.findOne({ planId, email });
+    const existingAccess = await Access.findOne({ 
+      where: { planId, email } 
+    });
     if (existingAccess) {
       return res.status(400).json(
         createResponse('error', 'User already has access to this plan')
@@ -57,7 +59,7 @@ const createInvite = async (req, res, next) => {
     });
 
     // Get inviter details
-    const inviter = await User.findOne({ userId });
+    const inviter = await User.findOne({ where: { userId } });
     const inviterName = inviter ? `${inviter.firstName} ${inviter.lastName}`.trim() : 'Someone';
 
     // Send invite email
@@ -69,7 +71,7 @@ const createInvite = async (req, res, next) => {
       );
     } catch (emailError) {
       // Delete the invite if email fails
-      await Invite.findByIdAndDelete(invite._id);
+      await invite.destroy();
       
       return res.status(500).json(
         createResponse('error', 'Failed to send invite email')
@@ -88,10 +90,13 @@ const acceptInvite = async (req, res, next) => {
 
     // Find invite by token
     const invite = await Invite.findOne({
-      token,
-      status: 'pending',
-      expiresAt: { $gt: new Date() }
-    }).populate('planId');
+      where: {
+        token,
+        status: 'pending',
+        expiresAt: { [Op.gt]: new Date() }
+      },
+      include: [{ model: Plan, as: 'plan' }]
+    });
 
     if (!invite) {
       return res.status(404).json(
@@ -100,7 +105,7 @@ const acceptInvite = async (req, res, next) => {
     }
 
     // Get user details
-    const user = await User.findOne({ userId });
+    const user = await User.findOne({ where: { userId } });
     if (!user) {
       return res.status(404).json(
         createResponse('error', 'User not found')
@@ -115,15 +120,16 @@ const acceptInvite = async (req, res, next) => {
     }
 
     // Check if user already has access
-    const existingAccess = await Access.findOne({ planId: invite.planId._id, userId });
+    const existingAccess = await Access.findOne({ 
+      where: { planId: invite.planId, userId } 
+    });
     if (existingAccess) {
       // Update invite status and return success
-      invite.status = 'accepted';
-      await invite.save();
+      await invite.update({ status: 'accepted' });
       
       return res.json(
         createResponse('success', 'You already have access to this plan', {
-          plan: invite.planId,
+          plan: invite.plan,
           access: existingAccess
         })
       );
@@ -131,7 +137,7 @@ const acceptInvite = async (req, res, next) => {
 
     // Create access record
     const access = await Access.create({
-      planId: invite.planId._id,
+      planId: invite.planId,
       userId,
       email: user.email,
       role: 'viewer',
@@ -139,12 +145,11 @@ const acceptInvite = async (req, res, next) => {
     });
 
     // Update invite status
-    invite.status = 'accepted';
-    await invite.save();
+    await invite.update({ status: 'accepted' });
 
     res.json(
       createResponse('success', 'Invite accepted successfully', {
-        plan: invite.planId,
+        plan: invite.plan,
         access
       })
     );
@@ -159,9 +164,11 @@ const rejectInvite = async (req, res, next) => {
     const { token } = req.params;
 
     const invite = await Invite.findOne({
-      token,
-      status: 'pending',
-      expiresAt: { $gt: new Date() }
+      where: {
+        token,
+        status: 'pending',
+        expiresAt: { [Op.gt]: new Date() }
+      }
     });
 
     if (!invite) {
@@ -170,8 +177,7 @@ const rejectInvite = async (req, res, next) => {
       );
     }
 
-    invite.status = 'rejected';
-    await invite.save();
+    await invite.update({ status: 'rejected' });
 
     res.json(
       createResponse('success', 'Invite rejected')
@@ -187,10 +193,14 @@ const getInviteDetails = async (req, res, next) => {
     const { token } = req.params;
 
     const invite = await Invite.findOne({
-      token,
-      expiresAt: { $gt: new Date() }
-    }).populate('planId', 'nameoftheplace userPrompt imageUrl')
-      .populate('invitedBy', 'firstName lastName email');
+      where: {
+        token,
+        expiresAt: { [Op.gt]: new Date() }
+      },
+      include: [
+        { model: Plan, as: 'plan', attributes: ['nameoftheplace', 'userPrompt', 'imageUrl'] }
+      ]
+    });
 
     if (!invite) {
       return res.status(404).json(
@@ -199,14 +209,14 @@ const getInviteDetails = async (req, res, next) => {
     }
 
     // Get inviter details
-    const inviter = await User.findOne({ userId: invite.invitedBy });
+    const inviter = await User.findOne({ where: { userId: invite.invitedBy } });
 
     res.json(
       createResponse('success', 'Invite details retrieved successfully', {
         invite: {
-          planName: invite.planId.nameoftheplace,
-          planDescription: invite.planId.userPrompt,
-          planImage: invite.planId.imageUrl,
+          planName: invite.plan.nameoftheplace,
+          planDescription: invite.plan.userPrompt,
+          planImage: invite.plan.imageUrl,
           inviterName: inviter ? `${inviter.firstName} ${inviter.lastName}`.trim() : 'Unknown',
           inviterEmail: inviter ? inviter.email : '',
           status: invite.status,
@@ -229,7 +239,7 @@ const getPlanInvites = async (req, res, next) => {
     const { skip, limit: limitNum } = paginate(page, limit);
 
     // Check if plan exists and user is owner
-    const plan = await Plan.findById(planId);
+    const plan = await Plan.findByPk(planId);
     if (!plan) {
       return res.status(404).json(
         createResponse('error', 'Plan not found')
@@ -243,15 +253,17 @@ const getPlanInvites = async (req, res, next) => {
     }
 
     // Build query
-    let query = { planId };
-    if (status) query.status = status;
+    let whereClause = { planId };
+    if (status) whereClause.status = status;
 
-    const invites = await Invite.find(query)
-      .skip(skip)
-      .limit(limitNum)
-      .sort({ createdAt: -1 });
+    const invites = await Invite.findAll({
+      where: whereClause,
+      offset: skip,
+      limit: limitNum,
+      order: [['createdAt', 'DESC']]
+    });
 
-    const total = await Invite.countDocuments(query);
+    const total = await Invite.count({ where: whereClause });
 
     res.json(
       createResponse('success', 'Plan invites retrieved successfully', {
@@ -276,7 +288,9 @@ const cancelInvite = async (req, res, next) => {
     const { inviteId } = req.params;
     const userId = req.userId;
 
-    const invite = await Invite.findById(inviteId).populate('planId');
+    const invite = await Invite.findByPk(inviteId, {
+      include: [{ model: Plan, as: 'plan' }]
+    });
     if (!invite) {
       return res.status(404).json(
         createResponse('error', 'Invite not found')
@@ -284,7 +298,7 @@ const cancelInvite = async (req, res, next) => {
     }
 
     // Check if user is plan owner
-    if (invite.planId.userId !== userId) {
+    if (invite.plan.userId !== userId) {
       return res.status(403).json(
         createResponse('error', 'Access denied. Only plan owner can cancel invites.')
       );
@@ -297,8 +311,7 @@ const cancelInvite = async (req, res, next) => {
       );
     }
 
-    invite.status = 'expired';
-    await invite.save();
+    await invite.update({ status: 'expired' });
 
     res.json(
       createResponse('success', 'Invite cancelled successfully')
@@ -314,7 +327,9 @@ const resendInvite = async (req, res, next) => {
     const { inviteId } = req.params;
     const userId = req.userId;
 
-    const invite = await Invite.findById(inviteId).populate('planId');
+    const invite = await Invite.findByPk(inviteId, {
+      include: [{ model: Plan, as: 'plan' }]
+    });
     if (!invite) {
       return res.status(404).json(
         createResponse('error', 'Invite not found')
@@ -322,7 +337,7 @@ const resendInvite = async (req, res, next) => {
     }
 
     // Check if user is plan owner
-    if (invite.planId.userId !== userId) {
+    if (invite.plan.userId !== userId) {
       return res.status(403).json(
         createResponse('error', 'Access denied. Only plan owner can resend invites.')
       );
@@ -336,18 +351,20 @@ const resendInvite = async (req, res, next) => {
     }
 
     // Update invite
-    invite.status = 'pending';
-    invite.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-    invite.token = crypto.randomBytes(32).toString('hex'); // New token
-    await invite.save();
+    const newToken = crypto.randomBytes(32).toString('hex');
+    await invite.update({
+      status: 'pending',
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      token: newToken
+    });
 
     // Get inviter details
-    const inviter = await User.findOne({ userId });
+    const inviter = await User.findOne({ where: { userId } });
     const inviterName = inviter ? `${inviter.firstName} ${inviter.lastName}`.trim() : 'Someone';
 
     // Send invite email
     try {
-      await sendPlanInviteEmail(invite.email, invite.planId.nameoftheplace, inviterName, invite.token);
+      await sendPlanInviteEmail(invite.email, invite.plan.nameoftheplace, inviterName, newToken);
       
       res.json(
         createResponse('success', 'Invite resent successfully', { invite })

@@ -1,4 +1,4 @@
-const User = require('../models/User');
+const { User } = require('../models');
 
 const adminOnly = async (req, res, next) => {
   try {
@@ -11,7 +11,7 @@ const adminOnly = async (req, res, next) => {
     }
 
     // Get user from database to check role
-    const user = await User.findOne({ userId: req.user.userId });
+    const user = await User.findOne({ where: { userId: req.user.userId } });
     
     if (!user) {
       return res.status(404).json({

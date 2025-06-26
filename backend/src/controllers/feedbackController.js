@@ -1,17 +1,24 @@
-const Feedback = require('../models/Feedback');
-const Plan = require('../models/Plan');
+const { Feedback, Plan, User } = require('../models');
 const { createResponse, paginate } = require('../utils/helpers');
 const { sendFeedbackAcknowledgmentEmail } = require('../services/emailService');
+const { Op } = require('sequelize');
 
 // Create feedback
 const createFeedback = async (req, res, next) => {
   try {
-    const { message, label, planId } = req.body;
+    const { 
+      message, 
+      comment,
+      label, 
+      planId, 
+      rating = 5,
+      category = 'general' 
+    } = req.body;
     const userId = req.userId;
 
     // If planId is provided, check if plan exists
     if (planId) {
-      const plan = await Plan.findById(planId);
+      const plan = await Plan.findByPk(planId);
       if (!plan) {
         return res.status(404).json(
           createResponse('error', 'Plan not found')
@@ -21,11 +28,15 @@ const createFeedback = async (req, res, next) => {
 
     const feedback = await Feedback.create({
       userId,
-      planId,
-      message,
-      label,
+      planId: planId || null,
+      message: message || comment || '',
+      comment: comment || message || '',
+      label: label || 'other',
+      category,
+      rating,
       status: 'open',
-      priority: 'medium'
+      priority: 'medium',
+      isPublic: true
     });
 
     // Send acknowledgment email (async, don't wait for it)
@@ -55,13 +66,15 @@ const getUserFeedback = async (req, res, next) => {
     if (status) query.status = status;
     if (label) query.label = label;
 
-    const feedback = await Feedback.find(query)
-      .skip(skip)
-      .limit(limitNum)
-      .sort({ createdAt: -1 })
-      .populate('planId', 'nameoftheplace');
+    const feedback = await Feedback.findAll({
+      where: query,
+      offset: skip,
+      limit: limitNum,
+      order: [['createdAt', 'DESC']],
+      include: [{ model: Plan, as: 'plan', attributes: ['nameoftheplace'] }]
+    });
 
-    const total = await Feedback.countDocuments(query);
+    const total = await Feedback.count({ where: query });
 
     res.json(
       createResponse('success', 'Feedback retrieved successfully', {
@@ -87,59 +100,49 @@ const getAllFeedback = async (req, res, next) => {
     const { skip, limit: limitNum } = paginate(page, limit);
 
     // Build query
+    const { Op } = require('sequelize');
     let query = {};
     if (status) query.status = status;
     if (label) query.label = label;
     if (priority) query.priority = priority;
 
     if (search) {
-      query.$or = [
-        { message: { $regex: search, $options: 'i' } },
-        { userId: { $regex: search, $options: 'i' } }
+      query[Op.or] = [
+        { message: { [Op.iLike]: `%${search}%` } },
+        { userId: { [Op.iLike]: `%${search}%` } }
       ];
     }
 
-    const feedback = await Feedback.find(query)
-      .skip(skip)
-      .limit(limitNum)
-      .sort({ createdAt: -1 })
-      .populate('planId', 'nameoftheplace')
-      .populate('userId', 'firstName lastName email');
+    const feedback = await Feedback.findAll({
+      where: query,
+      offset: skip,
+      limit: limitNum,
+      order: [['createdAt', 'DESC']],
+      include: [{ model: Plan, as: 'plan', attributes: ['nameoftheplace'] }]
+    });
 
-    const total = await Feedback.countDocuments(query);
+    const total = await Feedback.count({ where: query });
 
-    // Get feedback statistics
-    const stats = await Feedback.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalFeedback: { $sum: 1 },
-          openCount: {
-            $sum: { $cond: [{ $eq: ['$status', 'open'] }, 1, 0] }
-          },
-          inProgressCount: {
-            $sum: { $cond: [{ $eq: ['$status', 'in_progress'] }, 1, 0] }
-          },
-          resolvedCount: {
-            $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] }
-          },
-          closedCount: {
-            $sum: { $cond: [{ $eq: ['$status', 'closed'] }, 1, 0] }
-          }
-        }
-      }
+    // Get feedback statistics using Sequelize
+    const [openCount, inProgressCount, resolvedCount, closedCount] = await Promise.all([
+      Feedback.count({ where: { status: 'open' } }),
+      Feedback.count({ where: { status: 'in_progress' } }),
+      Feedback.count({ where: { status: 'resolved' } }),
+      Feedback.count({ where: { status: 'closed' } })
     ]);
+
+    const stats = {
+      totalFeedback: total,
+      openCount,
+      inProgressCount,
+      resolvedCount,
+      closedCount
+    };
 
     res.json(
       createResponse('success', 'All feedback retrieved successfully', {
         feedback,
-        stats: stats[0] || {
-          totalFeedback: 0,
-          openCount: 0,
-          inProgressCount: 0,
-          resolvedCount: 0,
-          closedCount: 0
-        },
+        stats,
         pagination: {
           currentPage: parseInt(page),
           totalPages: Math.ceil(total / limitNum),
@@ -160,7 +163,7 @@ const updateFeedback = async (req, res, next) => {
     const { feedbackId } = req.params;
     const { status, priority, adminResponse, adminUserId } = req.body;
 
-    const feedback = await Feedback.findById(feedbackId);
+    const feedback = await Feedback.findByPk(feedbackId);
     if (!feedback) {
       return res.status(404).json(
         createResponse('error', 'Feedback not found')
@@ -176,12 +179,22 @@ const updateFeedback = async (req, res, next) => {
       updateData.responseDate = new Date();
     }
 
-    const updatedFeedback = await Feedback.findByIdAndUpdate(
-      feedbackId,
-      updateData,
-      { new: true, runValidators: true }
-    ).populate('planId', 'nameoftheplace')
-      .populate('userId', 'firstName lastName email');
+    await feedback.update(updateData);
+
+    // Re-fetch with associations
+    const updatedFeedback = await Feedback.findByPk(feedbackId, {
+      include: [
+        {
+          model: Plan,
+          as: 'plan',
+          attributes: ['nameoftheplace']
+        },
+        {
+          model: User,
+          attributes: ['firstName', 'lastName', 'email']
+        }
+      ]
+    });
 
     res.json(
       createResponse('success', 'Feedback updated successfully', { feedback: updatedFeedback })
@@ -251,7 +264,7 @@ const getPlanFeedback = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .populate('userId', 'firstName lastName email');
 
-    const total = await Feedback.countDocuments({ planId });
+    const total = await Feedback.count({ where: { planId } });
 
     res.json(
       createResponse('success', 'Plan feedback retrieved successfully', {

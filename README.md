@@ -2,11 +2,7 @@
 
 ## Your AI-powered travel companion for creating unforgettable journeys
 
-Travel Rogue is a comprehensive full-stack travel planning platform that combines cutting-edge **AI technology** with modern web development to revolutionize how people plan, manage, and share their travel experiences. Built with the **MERN stack** and powered by **Google Gemini AI**, the platform delivers personalized travel itineraries, real-time expense tracking, and collaborative planning features.
-
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Site-blue)](https://travel-rogue.vercel.app)
-[![GitHub](https://img.shields.io/badge/GitHub-Repository-black)](https://github.com/official-ashutosh/travel-Rogue)
-[![Tech Stack](https://img.shields.io/badge/Stack-MERN-green)](#tech-stack)
+Travel Rogue is a comprehensive full-stack travel planning platform that combines cutting-edge **AI technology** with modern web development to revolutionize how people plan, manage, and share their travel experiences. Built with **React.js**, **Node.js**, **Express.js**, and **PostgreSQL**, and powered by **Google Gemini AI**, the platform delivers personalized travel itineraries, real-time expense tracking, and collaborative planning features.
 
 ---
 
@@ -68,8 +64,8 @@ Travel Rogue is a comprehensive full-stack travel planning platform that combine
 
 - **Node.js** - JavaScript runtime environment
 - **Express.js** - Fast, unopinionated web framework
-- **MongoDB** - NoSQL database for flexible data storage
-- **Mongoose** - ODM for MongoDB with schema validation
+- **PostgreSQL** - Robust relational database with ACID compliance
+- **Sequelize** - Promise-based ORM for PostgreSQL with powerful querying
 - **JWT** - JSON Web Tokens for secure authentication
 - **Bcrypt** - Password hashing for security
 
@@ -95,7 +91,7 @@ Travel Rogue is a comprehensive full-stack travel planning platform that combine
 ### **Prerequisites**
 
 - Node.js 18+ and npm
-- MongoDB database (local or cloud)
+- PostgreSQL database (local or cloud)
 - API keys for:
   - Google Gemini AI
   - Google Maps API
@@ -129,8 +125,13 @@ Travel Rogue is a comprehensive full-stack travel planning platform that combine
    **Backend (.env):**
 
    ```env
-   # Database
-   MONGODB_URI=mongodb://localhost:27017/travel_rogue
+   # Database Configuration
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_NAME=Travel-Rogue
+   DB_USER=postgres
+   DB_PASSWORD=your_postgres_password
+   DATABASE_URL=postgresql://postgres:your_postgres_password@localhost:5432/Travel-Rogue
    
    # JWT Configuration
    JWT_SECRET=your-super-secret-jwt-key
@@ -154,7 +155,18 @@ Travel Rogue is a comprehensive full-stack travel planning platform that combine
    REACT_APP_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
    ```
 
-5. **Start the development servers:**
+5. **Database Setup:**
+
+   **First Time Setup (Run ONCE):**
+
+   ```bash
+   cd backend
+   npm run migrate
+   ```
+   
+   This will create all necessary PostgreSQL tables with the correct schema.
+
+6. **Start the development servers:**
 
    **Backend:**
 
@@ -170,9 +182,9 @@ Travel Rogue is a comprehensive full-stack travel planning platform that combine
    npm start
    ```
 
-6. **Access the application:**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000
+7. **Access the application:**
+   - Frontend: <http://localhost:3000>
+   - Backend API: <http://localhost:5000>
 
 ---
 
@@ -256,8 +268,8 @@ Travel Rogue is a comprehensive full-stack travel planning platform that combine
 Frontend (React.js)
     ↓ HTTP/REST API
 Backend (Express.js + Node.js)
-    ↓ ODM (Mongoose)
-Database (MongoDB)
+    ↓ ORM (Sequelize)
+Database (PostgreSQL)
     ↓ External APIs
 AI Services (Google Gemini) + Location APIs (Google Maps) + Weather (OpenWeather)
 ```
@@ -268,7 +280,7 @@ AI Services (Google Gemini) + Location APIs (Google Maps) + Weather (OpenWeather
 - **Server-Side**: Express.js REST API with middleware for security and validation
 - **AI Integration**: Google Gemini API for intelligent content generation and recommendations
 - **Real-time Data**: OpenWeather API integration for current weather conditions and forecasts
-- **Data Persistence**: MongoDB with Mongoose for flexible schema design and data validation
+- **Data Persistence**: PostgreSQL with Sequelize for robust relational data management and ACID compliance
 - **Authentication**: JWT-based session management with secure password hashing
 
 ---
@@ -339,6 +351,7 @@ travel-Rogue/
 ```bash
 npm start          # Start production server
 npm run dev        # Start development server with nodemon
+npm run migrate    # Run database migration (first time setup)
 npm test          # Run test suite
 npm run lint      # Run ESLint for code quality
 ```
@@ -368,7 +381,7 @@ cd backend && NODE_ENV=production npm start
 
 ### **Environment Variables for Production**
 
-- Update MongoDB URI to production database
+- Update PostgreSQL URI to production database
 - Configure secure JWT secrets
 - Set appropriate CORS origins
 - Configure rate limiting for production traffic
@@ -396,17 +409,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Google Gemini AI** for powerful travel planning capabilities
 - **OpenWeather** for reliable weather data APIs
 - **Google Maps** for comprehensive location services
-- **MongoDB** for flexible and scalable database solutions
+- **PostgreSQL** and **Sequelize** for reliable and robust database solutions
 - **React.js** and **Express.js** communities for excellent documentation and support
 
 ---
 
 ## 📞 Support
 
-For support, email support@travel-rogue.com or create an issue in the GitHub repository.
+For support, email <support@travel-rogue.com> or create an issue in the GitHub repository.
 
 ---
 
-*Made with ❤️ for travelers around the world*
+## Made with ❤️ for travelers around the world
 
 **⭐ Star this repository if you found it helpful!**
