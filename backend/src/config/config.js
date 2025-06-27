@@ -7,7 +7,7 @@ module.exports = {
     port: process.env.DB_PORT || 5432,
     name: process.env.DB_NAME || 'Travel-Rogue',
     user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'akumar15',
+    password: process.env.DB_PASSWORD,
     url: process.env.DATABASE_URL || `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'akumar15'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'Travel-Rogue'}`
   },
   
