@@ -6,7 +6,7 @@ import { AuthProvider } from './contexts/AuthContext.jsx';
 import { ThemeProvider } from './contexts/ThemeProvider.jsx';
 import { MapProvider } from './contexts/MapProvider.jsx';
 import AuthErrorBoundary from './components/AuthErrorBoundary.jsx';
-import AuthDebug from './components/AuthDebug.jsx';
+// import AuthDebug from './components/AuthDebug.jsx';
 import './styles/globals.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -18,7 +18,7 @@ root.render(
           <AuthProvider>
             <MapProvider>
               <App />
-              <AuthDebug />
+              {/* <AuthDebug /> */}
             </MapProvider>
           </AuthProvider>
         </ThemeProvider>

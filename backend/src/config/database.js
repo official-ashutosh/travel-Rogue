@@ -3,7 +3,7 @@ const { Sequelize } = require('sequelize');
 // Create sequelize instance
 const sequelize = new Sequelize(
   process.env.DATABASE_URL || 
-  `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'akumar15'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'Travel-Rogue'}`,
+  `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'Travel-Rogue'}`,
   {
     dialect: 'postgres',
     logging: process.env.ENABLE_SQL_LOGGING === 'true' ? console.log : false,
