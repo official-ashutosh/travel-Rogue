@@ -38,7 +38,6 @@ api.interceptors.response.use(
         
         // Only clear and redirect if not already on auth pages
         if (!['/login', '/signup', '/forgot-password', '/'].includes(currentPath)) {
-          console.log('API: Clearing expired token and redirecting');
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           
